@@ -8,6 +8,13 @@
       "when": 1777645336381,
       "tag": "0000_faulty_zaladane",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778400000000,
+      "tag": "0001_activity_client_links",
+      "breakpoints": true
     }
   ]
 }

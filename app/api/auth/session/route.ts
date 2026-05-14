@@ -1,51 +1,44 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 import {
   clearAuthCookies,
   clearWorkspaceCookie,
   setAuthCookies,
+  type WritableCookies,
 } from "@/lib/auth/cookies";
-import { createServerClient } from "@/lib/supabase/server";
+import { resolveSessionFromTokens } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => null);
   const accessToken = payload?.accessToken?.toString() ?? "";
   const refreshToken = payload?.refreshToken?.toString() ?? "";
-  const expiresAt =
-    typeof payload?.expiresAt === "number" ? payload.expiresAt : null;
 
-  if (!accessToken || !refreshToken) {
+  if (!refreshToken) {
     return NextResponse.json(
       { error: "Missing session payload." },
       { status: 400 }
     );
   }
 
-  const supabase = createServerClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser(accessToken);
-
-  if (error || !user) {
-    return NextResponse.json({ error: "Invalid session." }, { status: 401 });
-  }
-
-  const cookieStore = await cookies();
-  setAuthCookies(cookieStore, {
+  const { session, user } = await resolveSessionFromTokens({
     access_token: accessToken,
-    expires_at: expiresAt,
     refresh_token: refreshToken,
   });
 
-  return NextResponse.json({ ok: true });
+  if (!session || !user) {
+    return NextResponse.json({ error: "Invalid session." }, { status: 401 });
+  }
+
+  const response = NextResponse.json({ ok: true });
+  setAuthCookies(response.cookies as WritableCookies, session);
+
+  return response;
 }
 
 export async function DELETE() {
-  const cookieStore = await cookies();
-  clearAuthCookies(cookieStore);
-  clearWorkspaceCookie(cookieStore);
+  const response = NextResponse.json({ ok: true });
+  clearAuthCookies(response.cookies as WritableCookies);
+  clearWorkspaceCookie(response.cookies as WritableCookies);
 
-  return NextResponse.json({ ok: true });
+  return response;
 }

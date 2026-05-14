@@ -1,3 +1,5 @@
+import { FileText } from "lucide-react";
+
 import {
   createInvoiceAction,
   updateInvoicePaymentAction,
@@ -10,7 +12,7 @@ import {
   SectionTitle,
   StatusBadge,
 } from "@/components/dashboard/ui";
-import { getInvoicesPageData } from "@/lib/data/mvp";
+import { getInvoicesPageData } from "@/lib/data/dashboard";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 export default async function InvoicesPage() {
@@ -21,27 +23,24 @@ export default async function InvoicesPage() {
       <PageIntro
         eyebrow="Factures"
         title="Emission et encaissement"
-        description="Cree tes factures et mets a jour les paiements directement dans le dashboard."
+        description="Chaque facture doit etre rattachee a un projet pour garder une lecture claire des marges."
       />
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+      <section className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
         <Panel>
-          <SectionTitle
-            title="Nouvelle facture"
-            description="Un format simple pour expedier une facture MVP sans quitter l'app."
-          />
+          <SectionTitle title="Nouvelle facture" description="Simple et contextualisee." />
           <form action={createInvoiceAction} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <input
                 name="invoiceNumber"
                 required
                 placeholder="Numero"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               />
               <select
                 name="status"
                 defaultValue="sent"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               >
                 <option value="draft">Draft</option>
                 <option value="sent">Sent</option>
@@ -55,9 +54,9 @@ export default async function InvoicesPage() {
               <select
                 name="clientId"
                 defaultValue=""
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               >
-                <option value="">Sans client</option>
+                <option value="">Client</option>
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>
                     {client.label}
@@ -67,9 +66,9 @@ export default async function InvoicesPage() {
               <select
                 name="projectId"
                 defaultValue=""
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               >
-                <option value="">Sans projet</option>
+                <option value="">Projet</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.label}
@@ -81,7 +80,7 @@ export default async function InvoicesPage() {
               <input
                 name="currency"
                 defaultValue="EUR"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               />
               <input
                 name="quantity"
@@ -89,14 +88,14 @@ export default async function InvoicesPage() {
                 min={1}
                 step="1"
                 defaultValue={1}
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               />
             </div>
             <input
               name="itemDescription"
               required
               placeholder="Description de ligne"
-              className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+              className="w-full rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
             />
             <div className="grid gap-4 sm:grid-cols-3">
               <input
@@ -106,7 +105,7 @@ export default async function InvoicesPage() {
                 step="0.01"
                 placeholder="Sous-total"
                 required
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               />
               <input
                 name="taxAmount"
@@ -115,7 +114,7 @@ export default async function InvoicesPage() {
                 step="0.01"
                 defaultValue={0}
                 placeholder="Taxes"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               />
               <input
                 name="paidAmount"
@@ -124,7 +123,7 @@ export default async function InvoicesPage() {
                 step="0.01"
                 defaultValue={0}
                 placeholder="Encaisse"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -132,47 +131,44 @@ export default async function InvoicesPage() {
                 name="issuedAt"
                 type="date"
                 defaultValue={new Date().toISOString().slice(0, 10)}
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               />
               <input
                 name="dueAt"
                 type="date"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               />
             </div>
             <textarea
               name="notes"
               rows={3}
               placeholder="Notes"
-              className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+              className="w-full rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
             />
             <SubmitButton
               idleLabel="Creer la facture"
-              className="w-full rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </form>
         </Panel>
 
         <Panel>
-          <SectionTitle
-            title="Factures emises"
-            description="Ajuste le montant encaisse et le statut a mesure des paiements."
-          />
+          <SectionTitle icon={FileText} title="Factures" description="Projet, client, encours." />
           <div className="space-y-4">
             {invoices.length ? (
               invoices.map((invoice) => (
-                <article key={invoice.id} className="rounded-3xl bg-slate-950/80 p-5">
-                  <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                    <div>
+                <article
+                  key={invoice.id}
+                  className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5"
+                >
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="text-lg font-semibold text-white">
-                          {invoice.invoiceNumber}
-                        </h3>
+                        <h3 className="text-lg font-semibold text-white">{invoice.invoiceNumber}</h3>
                         <StatusBadge value={invoice.status} />
                       </div>
-                      <p className="mt-2 text-sm text-slate-400">
-                        Client: {invoice.clientName || "Sans client"} | Projet:{" "}
-                        {invoice.projectName || "Sans projet"}
+                      <p className="text-sm text-slate-400">
+                        {invoice.activityName || "Sans activite"} | {invoice.projectName || "Sans projet"} | {invoice.clientName || "Sans client"}
                       </p>
                     </div>
 
@@ -184,12 +180,12 @@ export default async function InvoicesPage() {
                         min={0}
                         step="0.01"
                         defaultValue={invoice.paidAmount}
-                        className="w-28 rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white outline-none focus:border-brand-500"
+                        className="w-28 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-sm text-white outline-none transition focus:border-brand-500"
                       />
                       <select
                         name="status"
                         defaultValue={invoice.status}
-                        className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white outline-none focus:border-brand-500"
+                        className="rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-sm text-white outline-none transition focus:border-brand-500"
                       >
                         <option value="draft">Draft</option>
                         <option value="sent">Sent</option>
@@ -201,33 +197,43 @@ export default async function InvoicesPage() {
                       <SubmitButton
                         idleLabel="Maj"
                         pendingLabel="..."
-                        className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-200 transition hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                       />
                     </form>
                   </div>
 
-                  <div className="mt-5 grid gap-3 text-sm text-slate-300 sm:grid-cols-3">
-                    <div className="rounded-3xl bg-slate-900/70 px-4 py-3">
-                      Total: {formatCurrency(invoice.total, invoice.currency)}
+                  <div className="mt-5 grid gap-3 sm:grid-cols-4">
+                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Total</p>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {formatCurrency(invoice.total, invoice.currency)}
+                      </p>
                     </div>
-                    <div className="rounded-3xl bg-slate-900/70 px-4 py-3">
-                      Encaisse: {formatCurrency(invoice.paidAmount, invoice.currency)}
+                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Encaisse</p>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {formatCurrency(invoice.paidAmount, invoice.currency)}
+                      </p>
                     </div>
-                    <div className="rounded-3xl bg-slate-900/70 px-4 py-3">
-                      Reste: {formatCurrency(invoice.outstanding, invoice.currency)}
+                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Reste</p>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {formatCurrency(invoice.outstanding, invoice.currency)}
+                      </p>
                     </div>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-4 text-xs uppercase tracking-[0.18em] text-slate-500">
-                    <span>Emise: {formatDate(invoice.issuedAt)}</span>
-                    <span>Echeance: {formatDate(invoice.dueAt)}</span>
+                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Echeance</p>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {formatDate(invoice.dueAt)}
+                      </p>
+                    </div>
                   </div>
                 </article>
               ))
             ) : (
               <EmptyState
                 title="Aucune facture"
-                description="Cree ta premiere facture pour suivre emission et encaissement."
+                description="La facturation apparait ici des qu'elle est liee a un projet."
               />
             )}
           </div>

@@ -9,26 +9,21 @@ export default async function DashboardShell({
 }: {
   children: ReactNode;
 }) {
-  const { activeWorkspace, profile, workspaces } = await getWorkspaceContext();
+  const { activeWorkspace, workspaces } = await getWorkspaceContext();
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <div className="mx-auto flex min-h-screen max-w-full">
-        <Sidebar
-          activeRole={activeWorkspace.role}
-          workspaceName={activeWorkspace.name}
-        />
-        <div className="flex-1 border-l border-white/10 bg-slate-950/95">
+    <div className="min-h-screen bg-black">
+      <div className="mx-auto min-h-screen max-w-[1600px] px-3 py-3 lg:px-4 lg:py-4 lg:pl-[20rem]">
+        <Sidebar />
+        <div className="min-h-[calc(100vh-2rem)] rounded-2xl bg-black ring-1 ring-white/8">
           <Header
             activeWorkspaceId={activeWorkspace.id}
-            profileName={profile?.fullName || profile?.email || "Utilisateur"}
-            workspaceName={activeWorkspace.name}
             workspaces={workspaces.map((workspace) => ({
               id: workspace.id,
               name: workspace.name,
             }))}
           />
-          <main className="min-h-[calc(100vh-80px)] p-6 sm:p-10">{children}</main>
+          <main className="min-h-[calc(100vh-80px)] p-4 sm:p-6 xl:p-7">{children}</main>
         </div>
       </div>
     </div>

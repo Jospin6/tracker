@@ -1,11 +1,6 @@
 import type { Metadata } from "next";
 
-import { AuthSessionSync } from "@/components/auth/auth-session-sync";
 import "./globals.css";
-import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "NuruTrack",
@@ -18,11 +13,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={cn("h-full antialiased", "font-sans", geist.variable)}>
-      <body className="min-h-full bg-slate-950 text-slate-100">
-        <AuthSessionSync />
-        {children}
-      </body>
+    <html
+      lang="fr"
+      className="h-full antialiased font-sans"
+      data-scroll-behavior="smooth"
+    >
+      <body className="min-h-full bg-black text-white">{children}</body>
     </html>
   );
 }

@@ -10,7 +10,7 @@ import {
   SectionTitle,
   StatusBadge,
 } from "@/components/dashboard/ui";
-import { getTasksPageData } from "@/lib/data/mvp";
+import { getTasksPageData } from "@/lib/data/dashboard";
 import { formatDate } from "@/lib/utils/format";
 
 export default async function TasksPage() {

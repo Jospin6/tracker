@@ -11,7 +11,7 @@ import {
   SectionTitle,
   StatusBadge,
 } from "@/components/dashboard/ui";
-import { getGoalsPageData } from "@/lib/data/mvp";
+import { getGoalsPageData } from "@/lib/data/dashboard";
 import { formatDate } from "@/lib/utils/format";
 
 export default async function GoalsPage() {

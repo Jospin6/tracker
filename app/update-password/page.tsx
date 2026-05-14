@@ -38,9 +38,33 @@ export default function UpdatePasswordPage() {
       return;
     }
 
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session) {
+      const response = await fetch("/api/auth/session", {
+        body: JSON.stringify({
+          accessToken: session.access_token,
+          expiresAt: session.expires_at,
+          refreshToken: session.refresh_token,
+        }),
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        setError("Le mot de passe a ete mis a jour mais la session serveur a echoue.");
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     setMessage("Ton mot de passe a ete mis a jour.");
     router.replace("/dashboard");
-    router.refresh();
   };
 
   return (

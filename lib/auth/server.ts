@@ -7,8 +7,15 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/db/client";
 import { profiles, workspaceMembers, workspaces } from "@/db/schema";
-import { readAuthCookies, WORKSPACE_COOKIE_NAME } from "@/lib/auth/cookies";
-import { createServerClient } from "@/lib/supabase/server";
+import {
+  clearAuthCookies,
+  clearWorkspaceCookie,
+  readAuthCookies,
+  setAuthCookies,
+  type WritableCookies,
+  WORKSPACE_COOKIE_NAME,
+} from "@/lib/auth/cookies";
+import { resolveSessionFromTokens } from "@/lib/auth/session";
 import { slugify } from "@/lib/utils/strings";
 
 export type WorkspaceListItem = {
@@ -24,21 +31,29 @@ export type WorkspaceListItem = {
 
 async function resolveCurrentUser() {
   const cookieStore = await cookies();
-  const { accessToken } = readAuthCookies(cookieStore);
+  const { accessToken, refreshToken } = readAuthCookies(cookieStore);
 
-  if (!accessToken) {
+  if (!refreshToken) {
     return null;
   }
 
-  const supabase = createServerClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser(accessToken);
+  const { session, user } = await resolveSessionFromTokens({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
 
-  if (error || !user) {
+  if (!session || !user) {
+    try {
+      clearAuthCookies(cookieStore as WritableCookies);
+      clearWorkspaceCookie(cookieStore as WritableCookies);
+    } catch {}
+
     return null;
   }
+
+  try {
+    setAuthCookies(cookieStore as WritableCookies, session);
+  } catch {}
 
   return user;
 }

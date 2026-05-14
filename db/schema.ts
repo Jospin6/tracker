@@ -358,6 +358,43 @@ export const clients = pgTable(
   ]
 );
 
+export const activityClients = pgTable(
+  "activity_clients",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "restrict" }),
+
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => activities.id, { onDelete: "cascade" }),
+
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("activity_clients_activity_client_unique").on(
+      table.activityId,
+      table.clientId
+    ),
+    index("activity_clients_workspace_id_idx").on(table.workspaceId),
+    index("activity_clients_created_by_idx").on(table.createdBy),
+    index("activity_clients_activity_id_idx").on(table.activityId),
+    index("activity_clients_client_id_idx").on(table.clientId),
+  ]
+);
+
 export const projects = pgTable(
   "projects",
   {
@@ -421,6 +458,43 @@ export const projects = pgTable(
     index("projects_client_id_idx").on(table.clientId),
     index("projects_status_idx").on(table.status),
     index("projects_priority_idx").on(table.priority),
+  ]
+);
+
+export const projectClients = pgTable(
+  "project_clients",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "restrict" }),
+
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("project_clients_project_client_unique").on(
+      table.projectId,
+      table.clientId
+    ),
+    index("project_clients_workspace_id_idx").on(table.workspaceId),
+    index("project_clients_created_by_idx").on(table.createdBy),
+    index("project_clients_project_id_idx").on(table.projectId),
+    index("project_clients_client_id_idx").on(table.clientId),
   ]
 );
 
@@ -967,8 +1041,14 @@ export type NewActivity = typeof activities.$inferInsert;
 export type Client = typeof clients.$inferSelect;
 export type NewClient = typeof clients.$inferInsert;
 
+export type ActivityClient = typeof activityClients.$inferSelect;
+export type NewActivityClient = typeof activityClients.$inferInsert;
+
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+
+export type ProjectClient = typeof projectClients.$inferSelect;
+export type NewProjectClient = typeof projectClients.$inferInsert;
 
 export type Goal = typeof goals.$inferSelect;
 export type NewGoal = typeof goals.$inferInsert;

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 
 const secure = process.env.NODE_ENV === "production";
+const oneYearInSeconds = 60 * 60 * 24 * 365;
 
 export const AUTH_COOKIE_NAMES = {
   accessToken: "nurutrack-access-token",
@@ -12,26 +13,34 @@ export const WORKSPACE_COOKIE_NAME = "nurutrack-workspace-id";
 
 type CookieStore = Awaited<ReturnType<typeof cookies>>;
 type CookieOptions = Parameters<CookieStore["set"]>[2];
-type WritableCookies = Pick<CookieStore, "delete" | "get" | "set">;
+type CookieValue = ReturnType<CookieStore["get"]>;
 
-function getCookieOptions(expiresAt?: number | null): CookieOptions {
+export type ReadableCookies = {
+  get(name: string): CookieValue;
+};
+
+export type WritableCookies = ReadableCookies & {
+  delete(name: string): unknown;
+  set(name: string, value: string, options?: CookieOptions): unknown;
+};
+
+function getCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
+    maxAge: oneYearInSeconds,
     path: "/",
     sameSite: "lax",
     secure,
-    ...(typeof expiresAt === "number"
-      ? { expires: new Date(expiresAt * 1000) }
-      : {}),
   };
 }
 
-export function readAuthCookies(cookieStore: Pick<CookieStore, "get">) {
+export function readAuthCookies(cookieStore: ReadableCookies) {
+  const rawExpiresAt = cookieStore.get(AUTH_COOKIE_NAMES.expiresAt)?.value ?? "";
+  const expiresAt = Number(rawExpiresAt);
+
   return {
     accessToken: cookieStore.get(AUTH_COOKIE_NAMES.accessToken)?.value ?? null,
-    expiresAt: Number(
-      cookieStore.get(AUTH_COOKIE_NAMES.expiresAt)?.value ?? "0"
-    ),
+    expiresAt: Number.isFinite(expiresAt) && expiresAt > 0 ? expiresAt : null,
     refreshToken: cookieStore.get(AUTH_COOKIE_NAMES.refreshToken)?.value ?? null,
   };
 }
@@ -47,7 +56,7 @@ export function setAuthCookies(
   cookieStore.set(
     AUTH_COOKIE_NAMES.accessToken,
     session.access_token,
-    getCookieOptions(session.expires_at)
+    getCookieOptions()
   );
 
   cookieStore.set(
@@ -59,7 +68,7 @@ export function setAuthCookies(
   cookieStore.set(
     AUTH_COOKIE_NAMES.expiresAt,
     String(session.expires_at ?? ""),
-    getCookieOptions(session.expires_at)
+    getCookieOptions()
   );
 }
 
@@ -75,6 +84,7 @@ export function setWorkspaceCookie(
 ) {
   cookieStore.set(WORKSPACE_COOKIE_NAME, workspaceId, {
     httpOnly: true,
+    maxAge: oneYearInSeconds,
     path: "/",
     sameSite: "lax",
     secure,

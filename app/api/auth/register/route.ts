@@ -1,9 +1,23 @@
 import { NextResponse } from "next/server";
 
-import { db } from "@/db/client";
-import { profiles, workspaceMembers, workspaces } from "@/db/schema";
-import { createAdminClient, createServerClient } from "@/lib/supabase/server";
+import {
+  setAuthCookies,
+  type WritableCookies,
+} from "@/lib/auth/cookies";
+import {
+  getSafeErrorStatus,
+  getSupabaseConnectionErrorMessage,
+  isSupabaseConnectionError,
+} from "@/lib/supabase/errors";
+import { createServerClient } from "@/lib/supabase/server";
 import { slugify, splitFullName } from "@/lib/utils/strings";
+
+async function getRegisterDependencies() {
+  const [{ db }, { profiles, workspaceMembers, workspaces }] =
+    await Promise.all([import("@/db/client"), import("@/db/schema")]);
+
+  return { db, profiles, workspaceMembers, workspaces };
+}
 
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => null);
@@ -42,6 +56,13 @@ export async function POST(request: Request) {
     console.error("Supabase signUp error:", error);
 
     const message = error.message?.toLowerCase() ?? "";
+
+    if (isSupabaseConnectionError(error)) {
+      return NextResponse.json(
+        { error: getSupabaseConnectionErrorMessage() },
+        { status: 503 }
+      );
+    }
 
     if (
       message.includes("already registered") ||
@@ -84,7 +105,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { error: error.message || "Impossible de créer le compte." },
-      { status: error.status ?? 500 }
+      { status: getSafeErrorStatus(error, 500) }
     );
   }
 
@@ -100,6 +121,9 @@ export async function POST(request: Request) {
   const baseSlug = slugify(`${fullName}-workspace`) || "workspace";
 
   try {
+    const { db, profiles, workspaceMembers, workspaces } =
+      await getRegisterDependencies();
+
     const result = await db.transaction(async (tx) => {
       const [profile] = await tx
         .insert(profiles)
@@ -140,29 +164,22 @@ export async function POST(request: Request) {
       return { profile, workspace };
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
+        requiresEmailConfirmation: !data.session,
         user: data.user,
         workspace: result.workspace,
       },
       { status: 201 }
     );
+
+    if (data.session) {
+      setAuthCookies(response.cookies as WritableCookies, data.session);
+    }
+
+    return response;
   } catch (dbError) {
     console.error("Database account finalization error:", dbError);
-
-    try {
-      const adminSupabase = createAdminClient();
-
-      const { error: deleteError } = await adminSupabase.auth.admin.deleteUser(
-        userId
-      );
-
-      if (deleteError) {
-        console.error("Supabase rollback deleteUser error:", deleteError);
-      }
-    } catch (rollbackError) {
-      console.error("Rollback failed:", rollbackError);
-    }
 
     return NextResponse.json(
       {

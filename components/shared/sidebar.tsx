@@ -2,65 +2,43 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Activity,
-  BriefcaseBusiness,
-  CircleDollarSign,
-  ClipboardList,
-  FileText,
-  Gauge,
-  Megaphone,
-  Target,
-  Users,
-} from "lucide-react";
+import { Activity, BadgeDollarSign, Gauge, Megaphone, Settings2, Users } from "lucide-react";
 
 const nav = [
   { label: "Dashboard", href: "/dashboard", icon: Gauge },
   { label: "Activites", href: "/dashboard/activities", icon: Activity },
-  { label: "Projets", href: "/dashboard/projects", icon: BriefcaseBusiness },
-  { label: "Objectifs", href: "/dashboard/goals", icon: Target },
-  { label: "Taches", href: "/dashboard/tasks", icon: ClipboardList },
+  { label: "Budget", href: "/dashboard/budget", icon: BadgeDollarSign },
   { label: "Clients", href: "/dashboard/clients", icon: Users },
-  { label: "Finances", href: "/dashboard/finances", icon: CircleDollarSign },
-  { label: "Factures", href: "/dashboard/invoices", icon: FileText },
   { label: "Posts", href: "/dashboard/social-posts", icon: Megaphone },
+  { label: "Parametres", href: "/dashboard/settings", icon: Settings2 },
 ];
 
-export default function Sidebar({
-  activeRole,
-  workspaceName,
-}: {
-  activeRole: string;
-  workspaceName: string;
-}) {
+export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-80 flex-col border-r border-white/10 bg-slate-950/95 px-6 py-8 lg:flex">
-      <div className="mb-12">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-3xl bg-brand-500/10 px-4 py-3 text-brand-200">
-          <span className="h-2.5 w-2.5 rounded-full bg-brand-500" />
-          <span className="text-sm font-semibold">NuruTrack</span>
-        </div>
-        <p className="text-sm font-medium text-white">{workspaceName}</p>
-        <p className="mt-1 text-sm text-slate-400">
-          Role actif: {activeRole.replaceAll("_", " ")}
+    <aside className="mb-3 w-full rounded-2xl bg-black px-3 py-3 ring-1 ring-white/8 lg:fixed lg:inset-y-4 lg:left-4 lg:mb-0 lg:w-72 lg:px-4 lg:py-5">
+      <div className="mb-5 px-2">
+        <p className="text-lg font-black tracking-[-0.04em] text-white">
+          NuruTrack
         </p>
       </div>
-      <nav className="space-y-2">
+      <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
         {nav.map((item) => {
           const Icon = item.icon;
           const isActive =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+            item.href === "/dashboard"
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-3xl px-4 py-3 text-sm font-medium transition ${
+              className={`flex min-w-max items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition lg:min-w-0 ${
                 isActive
-                  ? "bg-brand-500/15 text-white"
-                  : "text-slate-300 hover:bg-slate-900/80 hover:text-white"
+                  ? "bg-white text-black"
+                  : "text-zinc-400 hover:bg-white/6 hover:text-white"
               }`}
             >
               <Icon className="h-4 w-4" />

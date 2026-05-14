@@ -1,11 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { AUTH_COOKIE_NAMES } from "@/lib/auth/cookies";
+import {
+  clearAuthCookies,
+  clearWorkspaceCookie,
+  readAuthCookies,
+  setAuthCookies,
+  type WritableCookies,
+} from "@/lib/auth/cookies";
+import { resolveSessionFromTokens } from "@/lib/auth/session";
 
 const AUTH_ROUTES = ["/forgot-password", "/login", "/register"];
 
 function isDashboardRoute(pathname: string) {
   return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+}
+
+function isProtectedApiRoute(pathname: string) {
+  return pathname === "/api/workspaces" || pathname.startsWith("/api/workspaces/");
 }
 
 function isAuthRoute(pathname: string) {
@@ -14,30 +25,85 @@ function isAuthRoute(pathname: string) {
   );
 }
 
-export function proxy(request: NextRequest) {
+function clearSessionCookies(cookieStore: WritableCookies) {
+  clearAuthCookies(cookieStore);
+  clearWorkspaceCookie(cookieStore);
+}
+
+function createLoginRedirect(request: NextRequest) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = "/login";
+  redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname);
+
+  return redirectUrl;
+}
+
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const hasSessionCookie =
-    Boolean(request.cookies.get(AUTH_COOKIE_NAMES.accessToken)?.value) ||
-    Boolean(request.cookies.get(AUTH_COOKIE_NAMES.refreshToken)?.value);
+  const requiresAuth = isDashboardRoute(pathname) || isProtectedApiRoute(pathname);
+  const { accessToken, refreshToken } = readAuthCookies(request.cookies);
+  const hasSessionCookie = Boolean(accessToken || refreshToken);
 
-  if (!hasSessionCookie && isDashboardRoute(pathname)) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("redirectedFrom", pathname);
+  let activeSession: Awaited<
+    ReturnType<typeof resolveSessionFromTokens>
+  >["session"] = null;
+  let hasAuthenticatedUser = false;
 
-    return NextResponse.redirect(redirectUrl);
+  if (hasSessionCookie) {
+    const resolvedSession = await resolveSessionFromTokens({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (resolvedSession.session && resolvedSession.user) {
+      activeSession = resolvedSession.session;
+      hasAuthenticatedUser = true;
+      setAuthCookies(request.cookies as WritableCookies, resolvedSession.session);
+    } else {
+      clearSessionCookies(request.cookies as WritableCookies);
+    }
   }
 
-  if (hasSessionCookie && isAuthRoute(pathname)) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (!hasAuthenticatedUser && requiresAuth) {
+    if (isProtectedApiRoute(pathname)) {
+      const response = NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+      clearSessionCookies(response.cookies as WritableCookies);
+      return response;
+    }
+
+    const response = NextResponse.redirect(createLoginRedirect(request));
+    clearSessionCookies(response.cookies as WritableCookies);
+    return response;
   }
 
-  return NextResponse.next();
+  if (hasAuthenticatedUser && isAuthRoute(pathname)) {
+    const response = NextResponse.redirect(new URL("/dashboard", request.url));
+
+    if (activeSession) {
+      setAuthCookies(response.cookies as WritableCookies, activeSession);
+    }
+
+    return response;
+  }
+
+  const response = NextResponse.next();
+
+  if (activeSession) {
+    setAuthCookies(response.cookies as WritableCookies, activeSession);
+  } else if (hasSessionCookie) {
+    clearSessionCookies(response.cookies as WritableCookies);
+  }
+
+  return response;
 }
 
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/api/workspaces/:path*",
     "/forgot-password",
     "/login",
     "/register",

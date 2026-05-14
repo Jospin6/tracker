@@ -2,16 +2,26 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-import { db } from "@/db/client";
-import { workspaceMembers } from "@/db/schema";
 import { setWorkspaceCookie } from "@/lib/auth/cookies";
-import { getCurrentUserOrNull } from "@/lib/auth/server";
+
+async function getWorkspaceSwitchDependencies() {
+  const [{ db }, { workspaceMembers }, { getCurrentUserOrNull }] =
+    await Promise.all([
+      import("@/db/client"),
+      import("@/db/schema"),
+      import("@/lib/auth/server"),
+    ]);
+
+  return { db, getCurrentUserOrNull, workspaceMembers };
+}
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   const { workspaceId } = await params;
+  const { db, getCurrentUserOrNull, workspaceMembers } =
+    await getWorkspaceSwitchDependencies();
   const user = await getCurrentUserOrNull();
 
   if (!user?.id) {

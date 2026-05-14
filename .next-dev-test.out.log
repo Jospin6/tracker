@@ -1,0 +1,15 @@
+
+> nurutrack@0.1.0 dev
+> next dev --port 3100
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3100
+- Network:       http://192.168.1.183:3100
+- Environments: .env
+✓ Ready in 1388ms
+Creating turbopack project {
+  dir: 'C:\\Users\\Ndagano\\Desktop\\mes_projtes\\gigs\\nurutrack',
+  testMode: true
+}
+
+ GET /register 200 in 5.9s (next.js: 3.4s, proxy.ts: 409ms, application-code: 2.1s)

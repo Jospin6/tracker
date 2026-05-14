@@ -1,6 +1,7 @@
 import type { InferModel } from "drizzle-orm";
 import {
   activities,
+  activityClients,
   attachments,
   budgets,
   clients,
@@ -9,6 +10,7 @@ import {
   invoices,
   profiles,
   projects,
+  projectClients,
   reports,
   socialPosts,
   tasks,
@@ -21,7 +23,9 @@ export type Profile = InferModel<typeof profiles>;
 export type Workspace = InferModel<typeof workspaces>;
 export type WorkspaceMember = InferModel<typeof workspaceMembers>;
 export type Activity = InferModel<typeof activities>;
+export type ActivityClient = InferModel<typeof activityClients>;
 export type Project = InferModel<typeof projects>;
+export type ProjectClient = InferModel<typeof projectClients>;
 export type Goal = InferModel<typeof goals>;
 export type Task = InferModel<typeof tasks>;
 export type Client = InferModel<typeof clients>;

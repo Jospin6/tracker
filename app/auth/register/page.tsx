@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { createBrowserClient } from "@/lib/supabase/client";
-
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -57,42 +55,14 @@ export default function RegisterPage() {
       return;
     }
 
-    const supabase = createBrowserClient();
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email: payload.email,
-      password: payload.password,
-    });
+    const body = await registerResponse.json().catch(() => null);
 
-    if (signInError || !data.session) {
-      setError(
-        signInError?.message ??
-          "Compte cree, mais la connexion automatique a echoue."
-      );
-      setIsSubmitting(false);
-      return;
-    }
-
-    const sessionResponse = await fetch("/api/auth/session", {
-      body: JSON.stringify({
-        accessToken: data.session.access_token,
-        expiresAt: data.session.expires_at,
-        refreshToken: data.session.refresh_token,
-      }),
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-    });
-
-    if (!sessionResponse.ok) {
-      setError("Le compte existe, mais la session serveur a echoue.");
-      setIsSubmitting(false);
+    if (body?.requiresEmailConfirmation) {
+      router.replace("/login?registered=1&confirmation=1");
       return;
     }
 
     router.replace("/dashboard");
-    router.refresh();
   };
 
   return (
@@ -105,8 +75,7 @@ export default function RegisterPage() {
           Cree ton workspace NuruTrack
         </h1>
         <p className="max-w-xl text-slate-400">
-          Ton compte personnel est cree avec un workspace et des permissions
-          owner.
+          Ton compte personnel est cree avec un workspace personnel.
         </p>
       </div>
 

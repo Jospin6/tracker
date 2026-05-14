@@ -7,11 +7,14 @@ import { cookies } from "next/headers";
 import { db } from "@/db/client";
 import {
   activities,
+  activityClients,
+  budgets,
   clients,
   goals,
   invoiceItems,
   invoices,
   projects,
+  projectClients,
   socialPosts,
   tasks,
   transactions,
@@ -104,6 +107,10 @@ function revalidateDashboardPaths(...paths: string[]) {
   const uniquePaths = new Set(["/dashboard", ...paths]);
 
   for (const path of uniquePaths) {
+    if (!path) {
+      continue;
+    }
+
     revalidatePath(path);
   }
 }
@@ -127,6 +134,61 @@ function getInvoiceStatus(total: number, paidAmount: number, fallback: string) {
   }
 
   return pickEnum(invoiceStatuses, fallback, "draft");
+}
+
+function isMissingTableError(error: unknown, tableName: string) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidateErrors = [error, "cause" in error ? error.cause : undefined].filter(Boolean);
+
+  return candidateErrors.some((candidate) => {
+    const code =
+      candidate && typeof candidate === "object" && "code" in candidate
+        ? String(candidate.code)
+        : "";
+    const message =
+      candidate instanceof Error ? candidate.message : String(candidate);
+
+    return code === "42P01" || message.includes(`"${tableName}"`);
+  });
+}
+
+async function safeInsertProjectClient(values: {
+  clientId: string;
+  createdBy: string;
+  projectId: string;
+  workspaceId: string;
+}) {
+  try {
+    await db.insert(projectClients).values(values).onConflictDoNothing();
+    return true;
+  } catch (error) {
+    if (isMissingTableError(error, "project_clients")) {
+      return false;
+    }
+
+    throw error;
+  }
+}
+
+async function safeInsertActivityClient(values: {
+  activityId: string;
+  clientId: string;
+  createdBy: string;
+  workspaceId: string;
+}) {
+  try {
+    await db.insert(activityClients).values(values).onConflictDoNothing();
+    return true;
+  } catch (error) {
+    if (isMissingTableError(error, "activity_clients")) {
+      return false;
+    }
+
+    throw error;
+  }
 }
 
 export async function logoutAction() {
@@ -174,42 +236,157 @@ export async function createActivityAction(formData: FormData) {
     workspaceId,
   });
 
-  revalidateDashboardPaths("/dashboard/activities");
+  revalidateDashboardPaths("/dashboard/activities", "/dashboard/budget");
 }
 
 export async function createProjectAction(formData: FormData) {
   const { userId, workspaceId } = await getActionContext();
   const name = getRequiredString(formData, "name");
+  const activityId = getOptionalString(formData, "activityId");
+  const clientId = getOptionalString(formData, "clientId");
 
   if (!name) {
     return;
   }
 
-  await db.insert(projects).values({
-    activityId: getOptionalString(formData, "activityId"),
-    budgetPlanned: getNumber(formData, "budgetPlanned"),
-    budgetUsed: getNumber(formData, "budgetUsed"),
-    clientId: getOptionalString(formData, "clientId"),
+  const [project] = await db
+    .insert(projects)
+    .values({
+      activityId,
+      budgetPlanned: getNumber(formData, "budgetPlanned"),
+      budgetUsed: getNumber(formData, "budgetUsed"),
+      clientId,
+      createdBy: userId,
+      description: getOptionalString(formData, "description"),
+      dueDate: getOptionalDate(formData, "dueDate"),
+      name,
+      priority: pickEnum(
+        projectPriorities,
+        getRequiredString(formData, "priority"),
+        "medium"
+      ),
+      progress: clampPercentage(getNumber(formData, "progress")),
+      startDate: getOptionalDate(formData, "startDate"),
+      status: pickEnum(
+        projectStatuses,
+        getRequiredString(formData, "status"),
+        "planned"
+      ),
+      workspaceId,
+    })
+    .returning({ id: projects.id });
+
+  if (project && clientId) {
+    await safeInsertProjectClient({
+      clientId,
+      createdBy: userId,
+      projectId: project.id,
+      workspaceId,
+    });
+
+    if (activityId) {
+      await safeInsertActivityClient({
+        activityId,
+        clientId,
+        createdBy: userId,
+        workspaceId,
+      });
+    }
+  }
+
+  revalidateDashboardPaths(
+    "/dashboard/activities",
+    "/dashboard/budget",
+    "/dashboard/projects",
+    activityId ? `/dashboard/activities/${activityId}` : ""
+  );
+}
+
+export async function assignClientRelationshipsAction(formData: FormData) {
+  const { userId, workspaceId } = await getActionContext();
+  const clientId = getRequiredString(formData, "clientId");
+  const activityId = getOptionalString(formData, "activityId");
+  const projectId = getOptionalString(formData, "projectId");
+
+  if (!clientId || (!activityId && !projectId)) {
+    return;
+  }
+
+  if (activityId) {
+    await safeInsertActivityClient({
+      activityId,
+      clientId,
+      createdBy: userId,
+      workspaceId,
+    });
+  }
+
+  if (projectId) {
+    const linked = await safeInsertProjectClient({
+      clientId,
+      createdBy: userId,
+      projectId,
+      workspaceId,
+    });
+
+    if (!linked) {
+      await db
+        .update(projects)
+        .set({
+          clientId,
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, projectId));
+    }
+  }
+
+  revalidateDashboardPaths(
+    "/dashboard/clients",
+    activityId ? `/dashboard/activities/${activityId}` : "",
+    projectId ? `/dashboard/projects/${projectId}` : ""
+  );
+}
+
+export async function createGoalAction(formData: FormData) {
+  const { userId, workspaceId } = await getActionContext();
+  const title = getRequiredString(formData, "title");
+  const activityId = getOptionalString(formData, "activityId");
+  const projectId = getOptionalString(formData, "projectId");
+
+  if (!title) {
+    return;
+  }
+
+  const currentValue = getNumber(formData, "currentValue");
+  const targetValue = getNumber(formData, "targetValue");
+  const progress = calculateProgress(currentValue, targetValue);
+
+  await db.insert(goals).values({
+    activityId,
     createdBy: userId,
+    currentValue,
+    deadline: getOptionalDate(formData, "deadline"),
     description: getOptionalString(formData, "description"),
-    dueDate: getOptionalDate(formData, "dueDate"),
-    name,
-    priority: pickEnum(
-      projectPriorities,
-      getRequiredString(formData, "priority"),
-      "medium"
+    goalType: pickEnum(
+      goalTypes,
+      getRequiredString(formData, "goalType"),
+      "quantitative"
     ),
-    progress: clampPercentage(getNumber(formData, "progress")),
+    progress,
+    projectId,
     startDate: getOptionalDate(formData, "startDate"),
-    status: pickEnum(
-      projectStatuses,
-      getRequiredString(formData, "status"),
-      "planned"
-    ),
+    status: progress >= 100 ? "achieved" : "in_progress",
+    targetValue,
+    title,
+    unit: getOptionalString(formData, "unit"),
     workspaceId,
   });
 
-  revalidateDashboardPaths("/dashboard/projects");
+  revalidateDashboardPaths(
+    "/dashboard/goals",
+    projectId ? `/dashboard/projects/${projectId}` : "",
+    activityId ? `/dashboard/activities/${activityId}` : ""
+  );
 }
 
 export async function updateProjectProgressAction(formData: FormData) {
@@ -233,42 +410,6 @@ export async function updateProjectProgressAction(formData: FormData) {
     .where(eq(projects.id, projectId));
 
   revalidateDashboardPaths("/dashboard/projects");
-}
-
-export async function createGoalAction(formData: FormData) {
-  const { userId, workspaceId } = await getActionContext();
-  const title = getRequiredString(formData, "title");
-
-  if (!title) {
-    return;
-  }
-
-  const currentValue = getNumber(formData, "currentValue");
-  const targetValue = getNumber(formData, "targetValue");
-  const progress = calculateProgress(currentValue, targetValue);
-
-  await db.insert(goals).values({
-    activityId: getOptionalString(formData, "activityId"),
-    createdBy: userId,
-    currentValue,
-    deadline: getOptionalDate(formData, "deadline"),
-    description: getOptionalString(formData, "description"),
-    goalType: pickEnum(
-      goalTypes,
-      getRequiredString(formData, "goalType"),
-      "quantitative"
-    ),
-    progress,
-    projectId: getOptionalString(formData, "projectId"),
-    startDate: getOptionalDate(formData, "startDate"),
-    status: progress >= 100 ? "achieved" : "in_progress",
-    targetValue,
-    title,
-    unit: getOptionalString(formData, "unit"),
-    workspaceId,
-  });
-
-  revalidateDashboardPaths("/dashboard/goals");
 }
 
 export async function updateGoalProgressAction(formData: FormData) {
@@ -307,6 +448,8 @@ export async function updateGoalProgressAction(formData: FormData) {
 export async function createTaskAction(formData: FormData) {
   const { userId, workspaceId } = await getActionContext();
   const title = getRequiredString(formData, "title");
+  const activityId = getOptionalString(formData, "activityId");
+  const projectId = getOptionalString(formData, "projectId");
 
   if (!title) {
     return;
@@ -319,7 +462,7 @@ export async function createTaskAction(formData: FormData) {
   );
 
   await db.insert(tasks).values({
-    activityId: getOptionalString(formData, "activityId"),
+    activityId,
     completedAt: status === "done" ? new Date() : null,
     createdBy: userId,
     description: getOptionalString(formData, "description"),
@@ -332,13 +475,17 @@ export async function createTaskAction(formData: FormData) {
       getRequiredString(formData, "priority"),
       "medium"
     ),
-    projectId: getOptionalString(formData, "projectId"),
+    projectId,
     status,
     title,
     workspaceId,
   });
 
-  revalidateDashboardPaths("/dashboard/tasks");
+  revalidateDashboardPaths(
+    "/dashboard/tasks",
+    projectId ? `/dashboard/projects/${projectId}` : "",
+    activityId ? `/dashboard/activities/${activityId}` : ""
+  );
 }
 
 export async function updateTaskStatusAction(formData: FormData) {
@@ -391,14 +538,45 @@ export async function createClientAction(formData: FormData) {
     workspaceId,
   });
 
-  revalidateDashboardPaths("/dashboard/clients");
+  revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
+}
+
+export async function createBudgetAction(formData: FormData) {
+  const { userId, workspaceId } = await getActionContext();
+  const name = getRequiredString(formData, "name");
+  const activityId = getOptionalString(formData, "activityId");
+  const projectId = getOptionalString(formData, "projectId");
+
+  if (!name) {
+    return;
+  }
+
+  await db.insert(budgets).values({
+    activityId,
+    createdBy: userId,
+    name,
+    periodEnd: getOptionalDate(formData, "periodEnd"),
+    periodStart: getOptionalDate(formData, "periodStart"),
+    projectId,
+    totalAmount: getNumber(formData, "totalAmount"),
+    usedAmount: 0,
+    workspaceId,
+  });
+
+  revalidateDashboardPaths(
+    "/dashboard/budget",
+    activityId ? `/dashboard/activities/${activityId}` : "",
+    projectId ? `/dashboard/projects/${projectId}` : ""
+  );
 }
 
 export async function createTransactionAction(formData: FormData) {
   const { userId, workspaceId } = await getActionContext();
+  const activityId = getOptionalString(formData, "activityId");
+  const projectId = getOptionalString(formData, "projectId");
 
   await db.insert(transactions).values({
-    activityId: getOptionalString(formData, "activityId"),
+    activityId,
     amount: getNumber(formData, "amount"),
     category: getOptionalString(formData, "category"),
     clientId: getOptionalString(formData, "clientId"),
@@ -407,7 +585,7 @@ export async function createTransactionAction(formData: FormData) {
     description: getOptionalString(formData, "description"),
     notes: getOptionalString(formData, "notes"),
     paymentMethod: getOptionalString(formData, "paymentMethod"),
-    projectId: getOptionalString(formData, "projectId"),
+    projectId,
     transactionDate:
       getOptionalDate(formData, "transactionDate") ??
       new Date().toISOString().slice(0, 10),
@@ -419,11 +597,18 @@ export async function createTransactionAction(formData: FormData) {
     workspaceId,
   });
 
-  revalidateDashboardPaths("/dashboard/finances");
+  revalidateDashboardPaths(
+    "/dashboard/budget",
+    "/dashboard/finances",
+    projectId ? `/dashboard/projects/${projectId}` : "",
+    activityId ? `/dashboard/activities/${activityId}` : ""
+  );
 }
 
 export async function createInvoiceAction(formData: FormData) {
   const { userId, workspaceId } = await getActionContext();
+  const activityId = getOptionalString(formData, "activityId");
+  const projectId = getOptionalString(formData, "projectId");
   const invoiceNumber = getRequiredString(formData, "invoiceNumber");
   const itemDescription = getRequiredString(formData, "itemDescription");
   const quantity = getNumber(formData, "quantity", 1);
@@ -449,7 +634,7 @@ export async function createInvoiceAction(formData: FormData) {
         issuedAt: getOptionalDate(formData, "issuedAt"),
         notes: getOptionalString(formData, "notes"),
         paidAmount,
-        projectId: getOptionalString(formData, "projectId"),
+        projectId,
         status: getInvoiceStatus(
           total,
           paidAmount,
@@ -475,7 +660,11 @@ export async function createInvoiceAction(formData: FormData) {
     });
   });
 
-  revalidateDashboardPaths("/dashboard/invoices");
+  revalidateDashboardPaths(
+    "/dashboard/invoices",
+    projectId ? `/dashboard/projects/${projectId}` : "",
+    activityId ? `/dashboard/activities/${activityId}` : ""
+  );
 }
 
 export async function updateInvoicePaymentAction(formData: FormData) {

@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 
-import { createBrowserClient } from "@/lib/supabase/client";
-
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const redirectedFrom = searchParams.get("redirectedFrom") || "/dashboard";
+  const isRegistered = searchParams.get("registered") === "1";
+  const requiresConfirmation = searchParams.get("confirmation") === "1";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -22,24 +22,10 @@ export default function LoginPage() {
     const formData = new FormData(event.currentTarget);
     const email = formData.get("email")?.toString() ?? "";
     const password = formData.get("password")?.toString() ?? "";
-    const supabase = createBrowserClient();
-
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError || !data.session) {
-      setError(signInError?.message ?? "Impossible de se connecter.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    const response = await fetch("/api/auth/session", {
+    const response = await fetch("/api/auth/login", {
       body: JSON.stringify({
-        accessToken: data.session.access_token,
-        expiresAt: data.session.expires_at,
-        refreshToken: data.session.refresh_token,
+        email,
+        password,
       }),
       credentials: "include",
       headers: {
@@ -49,13 +35,13 @@ export default function LoginPage() {
     });
 
     if (!response.ok) {
-      setError("La session serveur n'a pas pu etre synchronisee.");
+      const body = await response.json().catch(() => null);
+      setError(body?.error ?? "Impossible de se connecter.");
       setIsSubmitting(false);
       return;
     }
 
     router.replace(redirectedFrom);
-    router.refresh();
   };
 
   return (
@@ -74,6 +60,14 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {isRegistered ? (
+          <p className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+            {requiresConfirmation
+              ? "Compte cree. Verifie ton email avant de te connecter."
+              : "Compte cree. Connecte-toi pour acceder a ton dashboard."}
+          </p>
+        ) : null}
+
         <label className="block space-y-2 text-sm text-slate-200">
           <span>Email</span>
           <input
@@ -115,5 +109,13 @@ export default function LoginPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="space-y-8" />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

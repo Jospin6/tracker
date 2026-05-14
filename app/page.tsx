@@ -65,7 +65,7 @@ export default function Home() {
         {[
           { title: "Workspaces", description: "Prépare la gestion multi-workspace et les rôles owner/admin." },
           { title: "Activités", description: "Suivi centralisé des activités, projets, tâches et clients." },
-          { title: "Finances", description: "Transactions, factures et reporting prêts pour l’évolution." },
+          { title: "Budget", description: "Transactions, enveloppes et visualisation budgetaire integrées." },
         ].map((card) => (
           <article key={card.title} className="rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-soft">
             <h3 className="text-xl font-semibold text-white">{card.title}</h3>

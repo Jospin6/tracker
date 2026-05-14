@@ -2,14 +2,27 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-import { db } from "@/db/client";
-import { workspaceMembers, workspaces } from "@/db/schema";
 import { setWorkspaceCookie } from "@/lib/auth/cookies";
-import { getCurrentUserOrNull } from "@/lib/auth/server";
 import { slugify } from "@/lib/utils/strings";
+
+async function getWorkspaceDependencies() {
+  const [
+    { db },
+    { workspaceMembers, workspaces },
+    { getCurrentUserOrNull },
+  ] = await Promise.all([
+    import("@/db/client"),
+    import("@/db/schema"),
+    import("@/lib/auth/server"),
+  ]);
+
+  return { db, getCurrentUserOrNull, workspaceMembers, workspaces };
+}
 
 export async function GET() {
   try {
+    const { db, getCurrentUserOrNull, workspaceMembers, workspaces } =
+      await getWorkspaceDependencies();
     const user = await getCurrentUserOrNull();
 
     if (!user?.id) {
@@ -52,6 +65,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const { db, getCurrentUserOrNull, workspaceMembers, workspaces } =
+      await getWorkspaceDependencies();
     const user = await getCurrentUserOrNull();
 
     if (!user?.id) {
