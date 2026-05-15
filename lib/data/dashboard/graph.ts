@@ -17,6 +17,11 @@ import {
   transactions,
 } from "@/db/schema";
 import { getWorkspaceContext } from "@/lib/auth/server";
+import {
+  loadOptionalSocialChannels,
+  loadOptionalSocialPostDeliveries,
+  loadOptionalSocialPostDetails,
+} from "@/lib/social/repository";
 
 export type DashboardOption = {
   id: string;
@@ -94,6 +99,9 @@ export async function getWorkspaceGraph() {
     clientRows,
     goalRows,
     invoiceRows,
+    socialChannelRows,
+    socialDeliveryRows,
+    socialDetailRows,
     postRows,
     projectRows,
     projectClientRows,
@@ -126,6 +134,9 @@ export async function getWorkspaceGraph() {
       .from(invoices)
       .where(eq(invoices.workspaceId, workspaceId))
       .orderBy(desc(invoices.createdAt)),
+    loadOptionalSocialChannels(workspaceId),
+    loadOptionalSocialPostDeliveries(workspaceId),
+    loadOptionalSocialPostDetails(workspaceId),
     db
       .select()
       .from(socialPosts)
@@ -156,6 +167,9 @@ export async function getWorkspaceGraph() {
     clients: clientRows,
     goals: goalRows,
     invoices: invoiceRows,
+    socialChannels: socialChannelRows,
+    socialPostDeliveries: socialDeliveryRows,
+    socialPostDetails: socialDetailRows,
     posts: postRows,
     projectClients: projectClientRows,
     projects: projectRows,
@@ -172,6 +186,8 @@ export function createMaps(graph: DashboardWorkspaceGraph) {
     activityMap: new Map(graph.activities.map((row) => [row.id, row])),
     clientMap: new Map(graph.clients.map((row) => [row.id, row])),
     goalMap: new Map(graph.goals.map((row) => [row.id, row])),
+    socialChannelMap: new Map(graph.socialChannels.map((row) => [row.id, row])),
+    socialPostDetailMap: new Map(graph.socialPostDetails.map((row) => [row.postId, row])),
     projectMap: new Map(graph.projects.map((row) => [row.id, row])),
   };
 }

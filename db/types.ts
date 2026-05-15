@@ -12,6 +12,9 @@ import {
   projects,
   projectClients,
   reports,
+  socialChannels,
+  socialPostDeliveries,
+  socialPostDetails,
   socialPosts,
   tasks,
   transactions,
@@ -34,5 +37,8 @@ export type Budget = InferModel<typeof budgets>;
 export type Invoice = InferModel<typeof invoices>;
 export type InvoiceItem = InferModel<typeof invoiceItems>;
 export type SocialPost = InferModel<typeof socialPosts>;
+export type SocialPostDetail = InferModel<typeof socialPostDetails>;
+export type SocialChannel = InferModel<typeof socialChannels>;
+export type SocialPostDelivery = InferModel<typeof socialPostDeliveries>;
 export type Report = InferModel<typeof reports>;
 export type Attachment = InferModel<typeof attachments>;

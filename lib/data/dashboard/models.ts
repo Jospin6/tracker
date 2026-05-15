@@ -87,17 +87,72 @@ export function enrichPost(
   post: DashboardWorkspaceGraph["posts"][number],
   graph: DashboardWorkspaceGraph
 ) {
-  const { activityMap, goalMap, projectMap } = createMaps(graph);
+  const {
+    activityMap,
+    goalMap,
+    projectMap,
+    socialChannelMap,
+    socialPostDetailMap,
+  } = createMaps(graph);
   const project = post.projectId ? projectMap.get(post.projectId) : null;
   const activity =
     (post.activityId ? activityMap.get(post.activityId) : null) ??
     (project?.activityId ? activityMap.get(project.activityId) : null);
+  const detail = socialPostDetailMap.get(post.id) ?? null;
+  const deliveries = sortByDateAsc(
+    graph.socialPostDeliveries
+      .filter((delivery) => delivery.postId === post.id)
+      .map((delivery) => {
+        const channel = delivery.channelId
+          ? socialChannelMap.get(delivery.channelId) ?? null
+          : null;
+
+        return {
+          ...delivery,
+          channelHandle: channel?.handle ?? null,
+          channelName: channel?.name ?? null,
+          channelStatus: channel?.status ?? null,
+          provider: channel?.provider ?? null,
+        };
+      }),
+    (delivery) => delivery.scheduledAt ?? delivery.createdAt
+  );
+  const channels = uniqueById(
+    deliveries
+      .map((delivery) =>
+        delivery.channelId ? socialChannelMap.get(delivery.channelId) ?? null : null
+      )
+      .filter((channel): channel is NonNullable<typeof channel> => Boolean(channel))
+  );
+  const publishedUrls = deliveries
+    .map((delivery) => delivery.externalUrl)
+    .filter((value): value is string => Boolean(value));
 
   return {
     ...post,
     activityName: activity?.name ?? null,
+    approvalNotes: detail?.approvalNotes ?? null,
+    audience: detail?.audience ?? null,
+    autoPublish: detail?.autoPublish ?? false,
+    callToAction: detail?.callToAction ?? null,
+    channels,
+    contentScore: detail?.contentScore ?? 0,
+    deliveries,
+    deliveryCount: deliveries.length,
+    failedDeliveryCount: deliveries.filter((delivery) => delivery.status === "failed").length,
     goalName: post.goalId ? goalMap.get(post.goalId)?.title ?? null : null,
+    lastAutomationError: detail?.lastError ?? null,
+    lastSyncedAt: detail?.lastSyncedAt ?? null,
+    nextPublicationAt:
+      deliveries.find((delivery) => delivery.status === "scheduled")?.scheduledAt ??
+      post.scheduledAt,
+    objective: detail?.objective ?? null,
+    platformTargets: Array.from(new Set(deliveries.map((delivery) => delivery.platform))),
+    publishedDeliveryCount: deliveries.filter((delivery) => delivery.status === "published").length,
+    publishedUrls,
     projectName: project?.name ?? null,
+    scheduledDeliveryCount: deliveries.filter((delivery) => delivery.status === "scheduled").length,
+    tone: detail?.tone ?? null,
   };
 }
 

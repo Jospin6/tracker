@@ -564,11 +564,81 @@ export async function getInvoicesPageData() {
 
 export async function getSocialPostsPageData() {
   const graph = await getWorkspaceGraph();
+  const maps = createMaps(graph);
+  const posts = sortByUpdatedDesc(graph.posts).map((post) => enrichPost(post, graph));
+  const deliveries = sortByDateAsc(
+    graph.socialPostDeliveries.map((delivery) => {
+      const post = graph.posts.find((row) => row.id === delivery.postId) ?? null;
+      const channel = delivery.channelId
+        ? maps.socialChannelMap.get(delivery.channelId) ?? null
+        : null;
+
+      return {
+        ...delivery,
+        channelName: channel?.name ?? null,
+        externalHandle: channel?.handle ?? null,
+        postTitle: post?.title ?? "Post supprimé",
+      };
+    }),
+    (delivery) => delivery.scheduledAt ?? delivery.createdAt
+  );
+  const channels = sortByUpdatedDesc(graph.socialChannels).map((channel) => {
+    const relatedDeliveries = graph.socialPostDeliveries.filter(
+      (delivery) => delivery.channelId === channel.id
+    );
+
+    return {
+      ...channel,
+      failedCount: relatedDeliveries.filter((delivery) => delivery.status === "failed").length,
+      lastDeliveryAt: relatedDeliveries
+        .map((delivery) => delivery.publishedAt ?? delivery.scheduledAt)
+        .filter((value): value is Date => value instanceof Date)
+        .sort((left, right) => right.getTime() - left.getTime())[0] ?? null,
+      publishedCount: relatedDeliveries.filter((delivery) => delivery.status === "published")
+        .length,
+      scheduledCount: relatedDeliveries.filter((delivery) => delivery.status === "scheduled")
+        .length,
+    };
+  });
+  const engagementSortedPosts = [...posts].sort(
+    (left, right) =>
+      right.likes +
+      right.comments +
+      right.shares -
+      (left.likes + left.comments + left.shares)
+  );
 
   return {
     activities: buildOptions(graph.activities),
+    calendar: deliveries,
+    channels,
+    channelOptions: channels.map((channel) => ({
+      id: channel.id,
+      label: `${channel.name} (${channel.platform})`,
+    })),
+    deliveryQueue: deliveries.filter((delivery) =>
+      ["scheduled", "failed", "processing"].includes(delivery.status)
+    ),
     goals: buildOptions(graph.goals),
-    posts: sortByUpdatedDesc(graph.posts).map((post) => enrichPost(post, graph)),
+    posts,
     projects: buildOptions(graph.projects),
+    summary: {
+      autoPublishPosts: posts.filter((post) => post.autoPublish).length,
+      connectedChannels: channels.filter((channel) => channel.status === "connected").length,
+      draftPosts: posts.filter((post) =>
+        ["idea", "drafted", "approved"].includes(post.status)
+      ).length,
+      failedDeliveries: deliveries.filter((delivery) => delivery.status === "failed").length,
+      publishedPosts: posts.filter((post) => post.status === "published").length,
+      scheduledDeliveries: deliveries.filter((delivery) => delivery.status === "scheduled")
+        .length,
+      totalEngagement: posts.reduce(
+        (total, post) => total + post.likes + post.comments + post.shares,
+        0
+      ),
+      totalLeads: posts.reduce((total, post) => total + post.leadsGenerated, 0),
+      totalPosts: posts.length,
+    },
+    topPerformers: engagementSortedPosts.slice(0, 5),
   };
 }

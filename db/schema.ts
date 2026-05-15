@@ -6,6 +6,7 @@ import {
   uuid,
   varchar,
   integer,
+  boolean,
   numeric,
   timestamp,
   date,
@@ -149,6 +150,27 @@ export const socialStatus = pgEnum("social_status", [
   "approved",
   "scheduled",
   "published",
+  "cancelled",
+]);
+
+export const socialChannelProvider = pgEnum("social_channel_provider", [
+  "manual",
+  "webhook",
+]);
+
+export const socialChannelStatus = pgEnum("social_channel_status", [
+  "draft",
+  "connected",
+  "attention",
+  "disabled",
+]);
+
+export const socialDeliveryStatus = pgEnum("social_delivery_status", [
+  "draft",
+  "scheduled",
+  "processing",
+  "published",
+  "failed",
   "cancelled",
 ]);
 
@@ -939,6 +961,171 @@ export const socialPosts = pgTable(
   ]
 );
 
+export const socialPostDetails = pgTable(
+  "social_post_details",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "restrict" }),
+
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => socialPosts.id, { onDelete: "cascade" }),
+
+    brief: text("brief"),
+    objective: text("objective"),
+    audience: text("audience"),
+    tone: text("tone"),
+    callToAction: text("call_to_action"),
+    aiPrompt: text("ai_prompt"),
+    aiModel: text("ai_model"),
+
+    aiGeneratedAt: timestamp("ai_generated_at", { withTimezone: true }),
+    autoPublish: boolean("auto_publish").notNull().default(false),
+
+    approvalNotes: text("approval_notes"),
+    contentScore: integer("content_score").notNull().default(0),
+    lastError: text("last_error"),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("social_post_details_post_id_unique").on(table.postId),
+    index("social_post_details_workspace_id_idx").on(table.workspaceId),
+    index("social_post_details_created_by_idx").on(table.createdBy),
+    index("social_post_details_auto_publish_idx").on(table.autoPublish),
+    index("social_post_details_ai_generated_at_idx").on(table.aiGeneratedAt),
+  ]
+);
+
+export const socialChannels = pgTable(
+  "social_channels",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "restrict" }),
+
+    platform: socialPlatform("platform").notNull().default("other"),
+    provider: socialChannelProvider("provider").notNull().default("manual"),
+    status: socialChannelStatus("status").notNull().default("draft"),
+
+    name: text("name").notNull(),
+    handle: text("handle"),
+    webhookUrl: text("webhook_url"),
+    authConfig: jsonb("auth_config").notNull().default({}),
+    externalAccountId: text("external_account_id"),
+
+    autoPublish: boolean("auto_publish").notNull().default(false),
+    lastValidatedAt: timestamp("last_validated_at", { withTimezone: true }),
+    lastError: text("last_error"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("social_channels_workspace_name_unique").on(
+      table.workspaceId,
+      table.name
+    ),
+    index("social_channels_workspace_id_idx").on(table.workspaceId),
+    index("social_channels_created_by_idx").on(table.createdBy),
+    index("social_channels_platform_idx").on(table.platform),
+    index("social_channels_provider_idx").on(table.provider),
+    index("social_channels_status_idx").on(table.status),
+    index("social_channels_auto_publish_idx").on(table.autoPublish),
+  ]
+);
+
+export const socialPostDeliveries = pgTable(
+  "social_post_deliveries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "restrict" }),
+
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => socialPosts.id, { onDelete: "cascade" }),
+
+    channelId: uuid("channel_id").references(() => socialChannels.id, {
+      onDelete: "set null",
+    }),
+
+    platform: socialPlatform("platform").notNull().default("other"),
+
+    captionOverride: text("caption_override"),
+    hashtagsOverride: text("hashtags_override"),
+
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+
+    status: socialDeliveryStatus("status").notNull().default("draft"),
+
+    externalPostId: text("external_post_id"),
+    externalUrl: text("external_url"),
+    lastError: text("last_error"),
+
+    attempts: integer("attempts").notNull().default(0),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
+
+    views: integer("views").notNull().default(0),
+    likes: integer("likes").notNull().default(0),
+    comments: integer("comments").notNull().default(0),
+    shares: integer("shares").notNull().default(0),
+    leadsGenerated: integer("leads_generated").notNull().default(0),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("social_post_deliveries_workspace_id_idx").on(table.workspaceId),
+    index("social_post_deliveries_created_by_idx").on(table.createdBy),
+    index("social_post_deliveries_post_id_idx").on(table.postId),
+    index("social_post_deliveries_channel_id_idx").on(table.channelId),
+    index("social_post_deliveries_platform_idx").on(table.platform),
+    index("social_post_deliveries_status_idx").on(table.status),
+    index("social_post_deliveries_scheduled_at_idx").on(table.scheduledAt),
+    index("social_post_deliveries_published_at_idx").on(table.publishedAt),
+    index("social_post_deliveries_next_retry_at_idx").on(table.nextRetryAt),
+  ]
+);
+
 export const reports = pgTable(
   "reports",
   {
@@ -1070,6 +1257,15 @@ export type NewInvoiceItem = typeof invoiceItems.$inferInsert;
 
 export type SocialPost = typeof socialPosts.$inferSelect;
 export type NewSocialPost = typeof socialPosts.$inferInsert;
+
+export type SocialPostDetail = typeof socialPostDetails.$inferSelect;
+export type NewSocialPostDetail = typeof socialPostDetails.$inferInsert;
+
+export type SocialChannel = typeof socialChannels.$inferSelect;
+export type NewSocialChannel = typeof socialChannels.$inferInsert;
+
+export type SocialPostDelivery = typeof socialPostDeliveries.$inferSelect;
+export type NewSocialPostDelivery = typeof socialPostDeliveries.$inferInsert;
 
 export type Report = typeof reports.$inferSelect;
 export type NewReport = typeof reports.$inferInsert;

@@ -15,6 +15,8 @@ import {
   invoices,
   projects,
   projectClients,
+  socialChannels,
+  socialPostDeliveries,
   socialPosts,
   tasks,
   transactions,
@@ -25,14 +27,28 @@ import {
   setWorkspaceCookie,
 } from "@/lib/auth/cookies";
 import { getWorkspaceContext } from "@/lib/auth/server";
+import { generateSocialDraft } from "@/lib/social/ai";
+import { publishDueSocialDeliveries } from "@/lib/social/publishing";
+import {
+  createSocialPostDeliveries,
+  refreshSocialPostFromDeliveries,
+  upsertSocialPostDetail,
+} from "@/lib/social/repository";
+import {
+  normalizeHashtags,
+  scoreSocialContent,
+  socialAiProviderOptions,
+} from "@/lib/social/shared";
 import {
   calculateProgress,
   clampPercentage,
+  getBoolean,
   getNumber,
   getOptionalDate,
   getOptionalNumber,
   getOptionalString,
   getRequiredString,
+  getStringList,
 } from "@/lib/utils/forms";
 
 const activityStatuses = ["active", "paused", "completed", "archived"] as const;
@@ -92,6 +108,21 @@ const socialStatuses = [
   "published",
   "cancelled",
 ] as const;
+const socialChannelProviders = ["manual", "webhook"] as const;
+const socialChannelStatuses = [
+  "draft",
+  "connected",
+  "attention",
+  "disabled",
+] as const;
+const socialDeliveryStatuses = [
+  "draft",
+  "scheduled",
+  "processing",
+  "published",
+  "failed",
+  "cancelled",
+] as const;
 
 function pickEnum<T extends readonly string[]>(
   values: T,
@@ -121,6 +152,7 @@ async function getActionContext() {
   return {
     userId: user.id,
     workspaceId: activeWorkspace.id,
+    workspaceName: activeWorkspace.name,
   };
 }
 
@@ -189,6 +221,74 @@ async function safeInsertActivityClient(values: {
 
     throw error;
   }
+}
+
+function getScheduledDateTime(formData: FormData, key = "scheduledAt") {
+  const value = getOptionalString(formData, key);
+  return value ? new Date(value) : null;
+}
+
+function getSocialPostStatus(
+  rawStatus: string,
+  scheduledAt: Date | null
+) {
+  const status = pickEnum(socialStatuses, rawStatus, "drafted");
+
+  if (status === "published") {
+    return status;
+  }
+
+  if (scheduledAt && (status === "drafted" || status === "approved" || status === "idea")) {
+    return "scheduled" as const;
+  }
+
+  return status;
+}
+
+function getSocialDeliveryStatus(
+  postStatus: (typeof socialStatuses)[number],
+  scheduledAt: Date | null
+) {
+  if (postStatus === "cancelled") {
+    return "cancelled" as const;
+  }
+
+  if (postStatus === "published") {
+    return "published" as const;
+  }
+
+  if (postStatus === "scheduled" || scheduledAt) {
+    return "scheduled" as const;
+  }
+
+  return "draft" as const;
+}
+
+function getSocialTargets(
+  formData: FormData,
+  fallbackPlatform: (typeof socialPlatforms)[number]
+) {
+  const platformTargets = getStringList(formData, "platformTargets").map((value) =>
+    pickEnum(socialPlatforms, value, fallbackPlatform)
+  );
+
+  return Array.from(
+    new Set(platformTargets.length ? platformTargets : [fallbackPlatform])
+  );
+}
+
+async function getProjectName(projectId: string | null) {
+  if (!projectId) {
+    return null;
+  }
+
+  const [project] = await db
+    .select({ name: projects.name })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+
+  return project?.name ?? null;
 }
 
 export async function logoutAction() {
@@ -702,34 +802,346 @@ export async function updateInvoicePaymentAction(formData: FormData) {
   revalidateDashboardPaths("/dashboard/invoices");
 }
 
+export async function createSocialChannelAction(formData: FormData) {
+  const { userId, workspaceId } = await getActionContext();
+  const name = getRequiredString(formData, "name");
+
+  if (!name) {
+    return;
+  }
+
+  const provider = pickEnum(
+    socialChannelProviders,
+    getRequiredString(formData, "provider"),
+    "manual"
+  );
+  const webhookUrl = getOptionalString(formData, "webhookUrl");
+  const bearerToken = getOptionalString(formData, "bearerToken");
+
+  try {
+    await db.insert(socialChannels).values({
+      authConfig: bearerToken ? { bearerToken } : {},
+      autoPublish: getBoolean(formData, "autoPublish"),
+      createdBy: userId,
+      externalAccountId: getOptionalString(formData, "externalAccountId"),
+      handle: getOptionalString(formData, "handle"),
+      name,
+      platform: pickEnum(
+        socialPlatforms,
+        getRequiredString(formData, "platform"),
+        "linkedin"
+      ),
+      provider,
+      status: pickEnum(
+        socialChannelStatuses,
+        getRequiredString(formData, "status"),
+        provider === "webhook" && webhookUrl ? "connected" : "draft"
+      ),
+      webhookUrl,
+      workspaceId,
+    });
+  } catch (error) {
+    if (isMissingTableError(error, "social_channels")) {
+      return;
+    }
+
+    throw error;
+  }
+
+  revalidateDashboardPaths("/dashboard/social-posts");
+}
+
 export async function createSocialPostAction(formData: FormData) {
   const { userId, workspaceId } = await getActionContext();
   const title = getRequiredString(formData, "title");
-  const scheduledAt = getOptionalString(formData, "scheduledAt");
 
   if (!title) {
     return;
   }
 
-  await db.insert(socialPosts).values({
-    activityId: getOptionalString(formData, "activityId"),
-    content: getOptionalString(formData, "content"),
+  const scheduledAt = getScheduledDateTime(formData);
+  const primaryPlatform = pickEnum(
+    socialPlatforms,
+    getRequiredString(formData, "platform"),
+    "linkedin"
+  );
+  const hashtags = normalizeHashtags(getOptionalString(formData, "hashtags"));
+  const status = getSocialPostStatus(
+    getRequiredString(formData, "status"),
+    scheduledAt
+  );
+  const [post] = await db
+    .insert(socialPosts)
+    .values({
+      activityId: getOptionalString(formData, "activityId"),
+      content: getOptionalString(formData, "content"),
+      createdBy: userId,
+      goalId: getOptionalString(formData, "goalId"),
+      hashtags,
+      platform: primaryPlatform,
+      projectId: getOptionalString(formData, "projectId"),
+      publishedAt: status === "published" ? new Date() : null,
+      scheduledAt,
+      status,
+      title,
+      workspaceId,
+    })
+    .returning({ id: socialPosts.id });
+
+  if (!post) {
+    return;
+  }
+
+  const callToAction = getOptionalString(formData, "callToAction");
+  await upsertSocialPostDetail({
+    approvalNotes: getOptionalString(formData, "approvalNotes"),
+    audience: getOptionalString(formData, "audience"),
+    autoPublish: getBoolean(formData, "autoPublish"),
+    brief: getOptionalString(formData, "brief"),
+    callToAction,
+    contentScore: scoreSocialContent({
+      callToAction,
+      content: getOptionalString(formData, "content"),
+      hashtags,
+      title,
+    }),
     createdBy: userId,
-    goalId: getOptionalString(formData, "goalId"),
-    hashtags: getOptionalString(formData, "hashtags"),
-    platform: pickEnum(
-      socialPlatforms,
-      getRequiredString(formData, "platform"),
-      "linkedin"
-    ),
-    projectId: getOptionalString(formData, "projectId"),
-    scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-    status: pickEnum(
-      socialStatuses,
-      getRequiredString(formData, "status"),
-      "idea"
-    ),
-    title,
+    objective: getOptionalString(formData, "objective"),
+    postId: post.id,
+    tone: getOptionalString(formData, "tone"),
+    workspaceId,
+  });
+
+  await createSocialPostDeliveries({
+    channelIds: getStringList(formData, "channelIds"),
+    createdBy: userId,
+    hashtagsOverride: hashtags,
+    platforms: getSocialTargets(formData, primaryPlatform),
+    postId: post.id,
+    scheduledAt,
+    status: getSocialDeliveryStatus(status, scheduledAt),
+    workspaceId,
+  });
+  await refreshSocialPostFromDeliveries(post.id);
+
+  revalidateDashboardPaths("/dashboard/social-posts");
+}
+
+export async function generateSocialPostAction(formData: FormData) {
+  const { userId, workspaceId, workspaceName } = await getActionContext();
+  const brief = getRequiredString(formData, "brief");
+
+  if (!brief) {
+    return;
+  }
+
+  const projectId = getOptionalString(formData, "projectId");
+  const scheduledAt = getScheduledDateTime(formData);
+  const primaryPlatform = pickEnum(
+    socialPlatforms,
+    getRequiredString(formData, "platform"),
+    "linkedin"
+  );
+  const objective = getOptionalString(formData, "objective");
+  const audience = getOptionalString(formData, "audience");
+  const provider = pickEnum(
+    socialAiProviderOptions,
+    getRequiredString(formData, "provider"),
+    "openai"
+  );
+  const tone = getOptionalString(formData, "tone");
+  const draft = await generateSocialDraft({
+    audience,
+    brief,
+    model: getOptionalString(formData, "model"),
+    objective,
+    platform: primaryPlatform,
+    provider,
+    projectName: await getProjectName(projectId),
+    tone,
+    workspaceName,
+  });
+  const status = getSocialPostStatus(
+    getRequiredString(formData, "status"),
+    scheduledAt
+  );
+  const [post] = await db
+    .insert(socialPosts)
+    .values({
+      activityId: getOptionalString(formData, "activityId"),
+      content: draft.content,
+      createdBy: userId,
+      goalId: getOptionalString(formData, "goalId"),
+      hashtags: draft.hashtags,
+      platform: primaryPlatform,
+      projectId,
+      publishedAt: status === "published" ? new Date() : null,
+      scheduledAt,
+      status,
+      title: draft.title,
+      workspaceId,
+    })
+    .returning({ id: socialPosts.id });
+
+  if (!post) {
+    return;
+  }
+
+  await upsertSocialPostDetail({
+    aiGeneratedAt: new Date(),
+    aiModel: `${draft.provider}:${draft.model}`,
+    aiPrompt: draft.prompt,
+    approvalNotes: draft.reasoning,
+    audience,
+    autoPublish: getBoolean(formData, "autoPublish"),
+    brief,
+    callToAction: draft.callToAction,
+    contentScore: draft.score,
+    createdBy: userId,
+    objective,
+    postId: post.id,
+    tone,
+    workspaceId,
+  });
+
+  await createSocialPostDeliveries({
+    channelIds: getStringList(formData, "channelIds"),
+    createdBy: userId,
+    hashtagsOverride: draft.hashtags,
+    platforms: getSocialTargets(formData, primaryPlatform),
+    postId: post.id,
+    scheduledAt,
+    status: getSocialDeliveryStatus(status, scheduledAt),
+    workspaceId,
+  });
+  await refreshSocialPostFromDeliveries(post.id);
+
+  revalidateDashboardPaths("/dashboard/social-posts");
+}
+
+export async function updateSocialPostAutomationAction(formData: FormData) {
+  const { userId, workspaceId } = await getActionContext();
+  const postId = getRequiredString(formData, "postId");
+
+  if (!postId) {
+    return;
+  }
+
+  const scheduledAt = getScheduledDateTime(formData);
+  const status = getSocialPostStatus(
+    getRequiredString(formData, "status"),
+    scheduledAt
+  );
+
+  await db
+    .update(socialPosts)
+    .set({
+      publishedAt: status === "published" ? new Date() : null,
+      scheduledAt,
+      status,
+      updatedAt: new Date(),
+    })
+    .where(eq(socialPosts.id, postId));
+
+  await upsertSocialPostDetail({
+    approvalNotes: getOptionalString(formData, "approvalNotes"),
+    autoPublish: getBoolean(formData, "autoPublish"),
+    callToAction: getOptionalString(formData, "callToAction"),
+    createdBy: userId,
+    postId,
+    workspaceId,
+  });
+
+  try {
+    await db
+      .update(socialPostDeliveries)
+      .set({
+        publishedAt: status === "published" ? new Date() : null,
+        scheduledAt,
+        status: getSocialDeliveryStatus(status, scheduledAt),
+        updatedAt: new Date(),
+      })
+      .where(eq(socialPostDeliveries.postId, postId));
+  } catch (error) {
+    if (!isMissingTableError(error, "social_post_deliveries")) {
+      throw error;
+    }
+  }
+
+  await refreshSocialPostFromDeliveries(postId);
+  revalidateDashboardPaths("/dashboard/social-posts");
+}
+
+export async function updateSocialPostMetricsAction(formData: FormData) {
+  const postId = getRequiredString(formData, "postId");
+
+  if (!postId) {
+    return;
+  }
+
+  await db
+    .update(socialPosts)
+    .set({
+      comments: getNumber(formData, "comments"),
+      leadsGenerated: getNumber(formData, "leadsGenerated"),
+      likes: getNumber(formData, "likes"),
+      shares: getNumber(formData, "shares"),
+      updatedAt: new Date(),
+      views: getNumber(formData, "views"),
+    })
+    .where(eq(socialPosts.id, postId));
+
+  revalidateDashboardPaths("/dashboard/social-posts");
+}
+
+export async function updateSocialDeliveryAction(formData: FormData) {
+  const deliveryId = getRequiredString(formData, "deliveryId");
+
+  if (!deliveryId) {
+    return;
+  }
+
+  const scheduledAt = getScheduledDateTime(formData);
+
+  try {
+    const [delivery] = await db
+      .update(socialPostDeliveries)
+      .set({
+        lastError: null,
+        publishedAt:
+          getRequiredString(formData, "status") === "published" ? new Date() : null,
+        scheduledAt,
+        status: pickEnum(
+          socialDeliveryStatuses,
+          getRequiredString(formData, "status"),
+          scheduledAt ? "scheduled" : "draft"
+        ),
+        updatedAt: new Date(),
+      })
+      .where(eq(socialPostDeliveries.id, deliveryId))
+      .returning({ postId: socialPostDeliveries.postId });
+
+    if (delivery?.postId) {
+      await refreshSocialPostFromDeliveries(delivery.postId);
+    }
+  } catch (error) {
+    if (isMissingTableError(error, "social_post_deliveries")) {
+      return;
+    }
+
+    throw error;
+  }
+
+  revalidateDashboardPaths("/dashboard/social-posts");
+}
+
+export async function runSocialPublishingWorkerAction(formData?: FormData) {
+  const { workspaceId } = await getActionContext();
+  const limit =
+    formData instanceof FormData ? getNumber(formData, "limit", 25) : 25;
+
+  await publishDueSocialDeliveries({
+    limit,
     workspaceId,
   });
 

@@ -30,6 +30,18 @@ export function getOptionalDate(formData: FormData, key: string) {
   return value || null;
 }
 
+export function getBoolean(formData: FormData, key: string) {
+  const value = formData.get(key)?.toString().trim().toLowerCase() ?? "";
+  return value === "true" || value === "1" || value === "on" || value === "yes";
+}
+
+export function getStringList(formData: FormData, key: string) {
+  return formData
+    .getAll(key)
+    .map((value) => value.toString().trim())
+    .filter(Boolean);
+}
+
 export function clampPercentage(value: number) {
   return Math.min(100, Math.max(0, Math.round(value)));
 }
