@@ -63,22 +63,19 @@ export default function UpdatePasswordPage() {
       }
     }
 
-    setMessage("Ton mot de passe a ete mis a jour.");
+    setMessage("Mot de passe mis a jour.");
     router.replace("/dashboard");
   };
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-xl items-center px-6 py-12">
-      <div className="w-full rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-soft sm:p-10">
+      <div className="app-panel w-full p-8 sm:p-10">
         <p className="text-sm uppercase tracking-[0.24em] text-brand-200">
           Recuperation
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-white">
-          Definis un nouveau mot de passe
+        <h1 className="mt-3 font-heading text-3xl font-semibold text-white">
+          Nouveau mot de passe
         </h1>
-        <p className="mt-2 text-slate-400">
-          Choisis un nouveau mot de passe puis retourne dans ton dashboard.
-        </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <label className="block space-y-2 text-sm text-slate-200">
@@ -88,7 +85,7 @@ export default function UpdatePasswordPage() {
               type="password"
               minLength={8}
               required
-              className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-brand-500"
+              className="app-input focus:border-brand-400"
             />
           </label>
 
@@ -99,7 +96,7 @@ export default function UpdatePasswordPage() {
               type="password"
               minLength={8}
               required
-              className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-brand-500"
+              className="app-input focus:border-brand-400"
             />
           </label>
 
@@ -118,7 +115,7 @@ export default function UpdatePasswordPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="app-button-primary w-full hover:brightness-[1.04]"
           >
             {isSubmitting ? "Mise a jour..." : "Mettre a jour"}
           </button>

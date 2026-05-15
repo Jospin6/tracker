@@ -15,10 +15,10 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className="h-full antialiased font-sans"
+      className="dark h-full antialiased font-sans"
       data-scroll-behavior="smooth"
     >
-      <body className="min-h-full bg-black text-white">{children}</body>
+      <body className="min-h-full bg-background text-foreground">{children}</body>
     </html>
   );
 }

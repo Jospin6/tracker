@@ -19,7 +19,6 @@ export default function RegisterPage() {
     const fullName = formData.get("full_name")?.toString().trim() ?? "";
     const password = formData.get("password")?.toString() ?? "";
 
-    // Validation basique côté client
     if (!email || !password || !fullName) {
       setError("Tous les champs sont obligatoires.");
       setIsSubmitting(false);
@@ -27,12 +26,11 @@ export default function RegisterPage() {
     }
 
     if (password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères.");
+      setError("Le mot de passe doit contenir au moins 6 caracteres.");
       setIsSubmitting(false);
       return;
     }
 
-    // Validation email basique
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError("Adresse email invalide.");
@@ -58,7 +56,7 @@ export default function RegisterPage() {
     const body = await registerResponse.json().catch(() => null);
 
     if (body?.requiresEmailConfirmation) {
-      router.replace("/login?registered=1&confirmation=1");
+      router.replace("/auth/login?registered=1&confirmation=1");
       return;
     }
 
@@ -67,16 +65,13 @@ export default function RegisterPage() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
+      <div className="space-y-3">
         <p className="text-sm uppercase tracking-[0.24em] text-brand-200">
           Inscription
         </p>
-        <h1 className="text-3xl font-semibold text-white">
-          Cree ton workspace NuruTrack
+        <h1 className="font-heading text-3xl font-semibold text-white">
+          Creer un compte
         </h1>
-        <p className="max-w-xl text-slate-400">
-          Ton compte personnel est cree avec un workspace personnel.
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -86,7 +81,7 @@ export default function RegisterPage() {
             name="full_name"
             type="text"
             required
-            className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-brand-500"
+            className="app-input focus:border-brand-400"
           />
         </label>
 
@@ -96,7 +91,7 @@ export default function RegisterPage() {
             name="email"
             type="email"
             required
-            className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-brand-500"
+            className="app-input focus:border-brand-400"
           />
         </label>
 
@@ -107,7 +102,7 @@ export default function RegisterPage() {
             type="password"
             minLength={8}
             required
-            className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-brand-500"
+            className="app-input focus:border-brand-400"
           />
         </label>
 
@@ -120,7 +115,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="app-button-primary w-full hover:brightness-[1.04]"
         >
           {isSubmitting ? "Creation..." : "Creer un compte"}
         </button>
@@ -128,7 +123,7 @@ export default function RegisterPage() {
 
       <p className="text-sm text-slate-400">
         Deja un compte ?{" "}
-        <Link href="/login" className="text-white underline">
+        <Link href="/auth/login" className="text-white underline">
           Connexion
         </Link>
       </p>

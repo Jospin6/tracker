@@ -17,9 +17,9 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="mb-3 w-full rounded-2xl bg-black px-3 py-3 ring-1 ring-white/8 lg:fixed lg:inset-y-4 lg:left-4 lg:mb-0 lg:w-72 lg:px-4 lg:py-5">
+    <aside className="app-panel mb-3 w-full px-3 py-3 lg:fixed lg:inset-y-4 lg:left-4 lg:mb-0 lg:w-72 lg:px-4 lg:py-5">
       <div className="mb-5 px-2">
-        <p className="text-lg font-black tracking-[-0.04em] text-white">
+        <p className="font-heading text-lg font-black tracking-[-0.05em] text-white">
           NuruTrack
         </p>
       </div>
@@ -37,7 +37,7 @@ export default function Sidebar() {
               href={item.href}
               className={`flex min-w-max items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition lg:min-w-0 ${
                 isActive
-                  ? "bg-white text-black"
+                  ? "bg-brand-500 text-slate-950 shadow-[0_12px_28px_rgba(214,179,107,0.14)]"
                   : "text-zinc-400 hover:bg-white/6 hover:text-white"
               }`}
             >

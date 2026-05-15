@@ -39,16 +39,13 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
+      <div className="space-y-3">
         <p className="text-sm uppercase tracking-[0.24em] text-brand-200">
           Mot de passe oublie
         </p>
-        <h1 className="text-3xl font-semibold text-white">
-          Reinitialise ton mot de passe
+        <h1 className="font-heading text-3xl font-semibold text-white">
+          Reinitialiser le mot de passe
         </h1>
-        <p className="max-w-xl text-slate-400">
-          Nous t&apos;enverrons un lien de reinitialisation sur ton email.
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -58,7 +55,7 @@ export default function ForgotPasswordPage() {
             name="email"
             type="email"
             required
-            className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-brand-500"
+            className="app-input focus:border-brand-400"
           />
         </label>
 
@@ -77,7 +74,7 @@ export default function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="app-button-primary w-full hover:brightness-[1.04]"
         >
           {isSubmitting ? "Envoi..." : "Envoyer le lien"}
         </button>
@@ -85,7 +82,7 @@ export default function ForgotPasswordPage() {
 
       <p className="text-sm text-slate-400">
         Retour a{" "}
-        <Link href="/login" className="text-white underline">
+        <Link href="/auth/login" className="text-white underline">
           connexion
         </Link>
         .

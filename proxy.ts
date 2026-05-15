@@ -9,7 +9,7 @@ import {
 } from "@/lib/auth/cookies";
 import { resolveSessionFromTokens } from "@/lib/auth/session";
 
-const AUTH_ROUTES = ["/forgot-password", "/login", "/register"];
+const AUTH_ROUTES = ["/auth/forgot-password", "/auth/login", "/auth/register"];
 
 function isDashboardRoute(pathname: string) {
   return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
@@ -32,7 +32,7 @@ function clearSessionCookies(cookieStore: WritableCookies) {
 
 function createLoginRedirect(request: NextRequest) {
   const redirectUrl = request.nextUrl.clone();
-  redirectUrl.pathname = "/login";
+  redirectUrl.pathname = "/auth/login";
   redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname);
 
   return redirectUrl;
@@ -104,8 +104,8 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/api/workspaces/:path*",
-    "/forgot-password",
-    "/login",
-    "/register",
+    "/auth/forgot-password",
+    "/auth/login",
+    "/auth/register",
   ],
 };

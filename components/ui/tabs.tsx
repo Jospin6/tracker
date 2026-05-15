@@ -19,7 +19,7 @@ function TabsList({
   return (
     <TabsPrimitive.List
       className={cn(
-        "inline-flex h-auto w-full flex-wrap gap-2 rounded-2xl bg-black p-2 ring-1 ring-white/8",
+        "app-card inline-flex h-auto w-full flex-wrap gap-2 p-2",
         className
       )}
       {...props}
@@ -34,7 +34,7 @@ function TabsTrigger({
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-medium text-zinc-400 transition hover:text-white data-[state=active]:bg-white data-[state=active]:text-black",
+        "inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-medium text-zinc-400 transition hover:bg-white/6 hover:text-white data-[state=active]:bg-brand-500 data-[state=active]:text-slate-950",
         className
       )}
       {...props}

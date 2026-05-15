@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -15,7 +14,6 @@ import { cn } from "@/lib/utils";
 export function ResponsiveFormDialog({
   children,
   className,
-  description,
   mobileContent,
   title,
   triggerClassName,
@@ -38,7 +36,6 @@ export function ResponsiveFormDialog({
           <DialogContent className={cn("max-h-[85vh] overflow-y-auto", className)}>
             <DialogHeader>
               <DialogTitle>{title}</DialogTitle>
-              {description ? <DialogDescription>{description}</DialogDescription> : null}
             </DialogHeader>
             {children}
           </DialogContent>

@@ -16,7 +16,10 @@ export function ProgressBar({
         <span>{displayValue ?? value}%</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-white/8">
-        <div className="h-full rounded-full bg-white transition-all" style={{ width: `${width}%` }} />
+        <div
+          className="h-full rounded-full bg-brand-500 transition-all"
+          style={{ width: `${width}%` }}
+        />
       </div>
     </div>
   );

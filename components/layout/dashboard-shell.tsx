@@ -12,10 +12,10 @@ export default async function DashboardShell({
   const { activeWorkspace, workspaces } = await getWorkspaceContext();
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-transparent">
       <div className="mx-auto min-h-screen max-w-[1600px] px-3 py-3 lg:px-4 lg:py-4 lg:pl-[20rem]">
         <Sidebar />
-        <div className="min-h-[calc(100vh-2rem)] rounded-2xl bg-black ring-1 ring-white/8">
+        <div className="app-panel min-h-[calc(100vh-2rem)] overflow-hidden">
           <Header
             activeWorkspaceId={activeWorkspace.id}
             workspaces={workspaces.map((workspace) => ({

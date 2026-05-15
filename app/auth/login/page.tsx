@@ -46,17 +46,13 @@ function LoginPageContent() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
+      <div className="space-y-3">
         <p className="text-sm uppercase tracking-[0.24em] text-brand-200">
           Connexion
         </p>
-        <h1 className="text-3xl font-semibold text-white">
-          Bienvenue dans NuruTrack
+        <h1 className="font-heading text-3xl font-semibold text-white">
+          Acces securise
         </h1>
-        <p className="max-w-xl text-slate-400">
-          Accede a ton cockpit, a ton workspace personnel et a toutes tes
-          donnees metier.
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -64,7 +60,7 @@ function LoginPageContent() {
           <p className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
             {requiresConfirmation
               ? "Compte cree. Verifie ton email avant de te connecter."
-              : "Compte cree. Connecte-toi pour acceder a ton dashboard."}
+              : "Compte cree. Connecte-toi pour acceder au dashboard."}
           </p>
         ) : null}
 
@@ -74,7 +70,7 @@ function LoginPageContent() {
             name="email"
             type="email"
             required
-            className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-brand-500"
+            className="app-input focus:border-brand-400"
           />
         </label>
 
@@ -84,7 +80,7 @@ function LoginPageContent() {
             name="password"
             type="password"
             required
-            className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-brand-500"
+            className="app-input focus:border-brand-400"
           />
         </label>
 
@@ -94,15 +90,18 @@ function LoginPageContent() {
           </p>
         ) : null}
 
-        <div className="flex items-center justify-between text-sm text-slate-400">
-          <Link href="/forgot-password" className="transition hover:text-white">
+        <div className="flex flex-col-reverse gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+          <Link
+            href="/auth/forgot-password"
+            className="transition hover:text-white"
+          >
             Mot de passe oublie ?
           </Link>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="app-button-primary hover:brightness-[1.04]"
           >
             {isSubmitting ? "Connexion..." : "Se connecter"}
           </button>

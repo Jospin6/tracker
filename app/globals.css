@@ -6,46 +6,52 @@
 
 :root {
   color-scheme: dark;
-  --font-app-sans: "Inter", "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  --font-app-heading: "Inter", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --font-app-sans: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --font-app-heading: "Segoe UI Variable Display", "Aptos", "Segoe UI Variable Text", sans-serif;
   font-family: var(--font-app-sans);
-  --background: oklch(0 0 0);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0 0 0);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0 0 0);
-  --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.98 0 0);
-  --primary-foreground: oklch(0.15 0 0);
-  --secondary: oklch(0 0 0);
-  --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0 0 0);
-  --muted-foreground: oklch(0.67 0 0);
-  --accent: oklch(0 0 0);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.55 0 0);
-  --border: oklch(1 0 0 / 7%);
-  --input: oklch(1 0 0 / 8%);
-  --ring: oklch(1 0 0 / 18%);
-  --chart-1: oklch(0.95 0 0);
-  --chart-2: oklch(0.75 0 0);
-  --chart-3: oklch(0.6 0 0);
-  --chart-4: oklch(0.45 0 0);
-  --chart-5: oklch(0.35 0 0);
+  --background: #090b10;
+  --foreground: #f5f7fb;
+  --card: #131823;
+  --card-foreground: #f5f7fb;
+  --popover: #151b26;
+  --popover-foreground: #f5f7fb;
+  --primary: #d6b36b;
+  --primary-foreground: #16120c;
+  --secondary: #171d29;
+  --secondary-foreground: #f5f7fb;
+  --muted: #0f131a;
+  --muted-foreground: #8d96a6;
+  --accent: #1b2230;
+  --accent-foreground: #f5f7fb;
+  --destructive: #f08e8e;
+  --border: rgb(214 225 255 / 12%);
+  --input: rgb(214 225 255 / 14%);
+  --ring: rgb(214 179 107 / 26%);
+  --chart-1: #d6b36b;
+  --chart-2: #7db7ad;
+  --chart-3: #8d98ff;
+  --chart-4: #c88b84;
+  --chart-5: #677388;
   --radius: 0.625rem;
-  --sidebar: oklch(0 0 0);
-  --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-primary: oklch(0.98 0 0);
-  --sidebar-primary-foreground: oklch(0.15 0 0);
-  --sidebar-accent: oklch(0.23 0 0);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(1 0 0 / 7%);
-  --sidebar-ring: oklch(1 0 0 / 18%);
-  --brand-100: oklch(0.98 0 0);
-  --brand-200: oklch(0.92 0 0);
-  --brand-400: oklch(0.82 0 0);
-  --brand-500: oklch(0.98 0 0);
-  --brand-600: oklch(0.74 0 0);
+  --surface-0: #090b10;
+  --surface-1: #10141c;
+  --surface-2: #151b26;
+  --surface-3: #1b2230;
+  --surface-border: rgb(214 225 255 / 10%);
+  --surface-border-strong: rgb(214 225 255 / 16%);
+  --sidebar: #0f131a;
+  --sidebar-foreground: #f5f7fb;
+  --sidebar-primary: #d6b36b;
+  --sidebar-primary-foreground: #16120c;
+  --sidebar-accent: #1b2230;
+  --sidebar-accent-foreground: #f5f7fb;
+  --sidebar-border: rgb(214 225 255 / 10%);
+  --sidebar-ring: rgb(214 179 107 / 26%);
+  --brand-100: #f9efdc;
+  --brand-200: #edd8a7;
+  --brand-400: #ddb975;
+  --brand-500: #d6b36b;
+  --brand-600: #bb984f;
 }
 
 html {
@@ -54,21 +60,47 @@ html {
 
 body {
   @apply min-h-screen text-slate-100 antialiased;
-  background: #000;
+  background-color: var(--background);
+  background-image:
+    radial-gradient(circle at top left, rgb(214 179 107 / 16%) 0%, transparent 30%),
+    radial-gradient(circle at top right, rgb(125 183 173 / 12%) 0%, transparent 28%),
+    linear-gradient(180deg, #0d1118 0%, var(--background) 40%, #07090d 100%);
+  background-attachment: fixed;
 }
 
 * {
   box-sizing: border-box;
 }
 
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+option {
+  background: var(--surface-2);
+  color: var(--foreground);
+}
+
 ::selection {
-  background: rgba(255, 255, 255, 0.18);
-  color: white;
+  background: rgb(214 179 107 / 24%);
+  color: var(--foreground);
 }
 
 @theme inline {
   --font-heading: var(--font-app-heading);
   --font-sans: var(--font-app-sans);
+  --color-black: var(--surface-1);
+  --color-white: var(--foreground);
+  --color-slate-950: var(--surface-1);
+  --color-slate-900: var(--surface-2);
+  --color-slate-800: var(--surface-3);
+  --color-slate-700: #293243;
+  --color-slate-500: #7d8798;
+  --color-zinc-500: #8f98a7;
+  --color-zinc-400: #adb4c0;
+  --color-zinc-300: #d3d9e4;
   --color-brand-100: var(--brand-100);
   --color-brand-200: var(--brand-200);
   --color-brand-400: var(--brand-400);
@@ -112,6 +144,60 @@ body {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@utility shadow-soft {
+  box-shadow:
+    0 24px 72px rgb(0 0 0 / 34%),
+    inset 0 1px 0 rgb(255 255 255 / 2%);
+}
+
+@utility app-panel {
+  @apply rounded-[1.75rem] border backdrop-blur-xl;
+  background:
+    linear-gradient(180deg, rgb(22 27 37 / 94%) 0%, rgb(14 18 25 / 94%) 100%);
+  border-color: var(--surface-border);
+  box-shadow:
+    0 24px 72px rgb(0 0 0 / 34%),
+    inset 0 1px 0 rgb(255 255 255 / 2%);
+}
+
+@utility app-card {
+  @apply rounded-2xl border;
+  background: rgb(11 14 20 / 86%);
+  border-color: var(--surface-border);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 2%);
+}
+
+@utility app-tile {
+  @apply rounded-xl border;
+  background: rgb(9 12 17 / 92%);
+  border-color: rgb(214 225 255 / 8%);
+}
+
+@utility app-input {
+  @apply w-full rounded-[1.25rem] border px-4 py-3 text-sm text-white outline-none transition;
+  background: rgb(8 10 15 / 92%);
+  border-color: var(--surface-border-strong);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 2%);
+}
+
+@utility app-button-primary {
+  @apply inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+  background: linear-gradient(135deg, var(--brand-400), var(--brand-500));
+  color: #14110c;
+  box-shadow: 0 18px 36px rgb(214 179 107 / 16%);
+}
+
+@utility app-button-secondary {
+  @apply inline-flex items-center justify-center rounded-full border px-5 py-3 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60;
+  background: rgb(255 255 255 / 4%);
+  border-color: var(--surface-border-strong);
+}
+
+@utility app-button-subtle {
+  @apply inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium text-zinc-300 transition;
+  background: transparent;
 }
 
 @layer base {

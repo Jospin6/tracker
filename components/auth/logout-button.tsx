@@ -13,7 +13,7 @@ export function LogoutButton() {
       credentials: "include",
       method: "POST",
     }).catch(() => null);
-    router.replace("/login");
+    router.replace("/auth/login");
   };
 
   return (
@@ -21,7 +21,7 @@ export function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={isSubmitting}
-      className="inline-flex items-center justify-center rounded-xl bg-black px-4 py-2.5 text-sm font-medium text-white ring-1 ring-white/10 transition hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50"
+      className="app-button-secondary hover:border-white/20 hover:bg-white/8"
     >
       {isSubmitting ? "Deconnexion..." : "Se deconnecter"}
     </button>

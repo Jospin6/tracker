@@ -24,24 +24,24 @@ export function BudgetBreakdownChart({
         layout="vertical"
         margin={{ left: 24, right: 12, top: 8, bottom: 0 }}
       >
-        <CartesianGrid stroke="#27272a" strokeDasharray="3 3" horizontal={false} />
-        <XAxis type="number" stroke="#71717a" tick={{ fontSize: 12 }} />
+        <CartesianGrid stroke="rgba(214, 225, 255, 0.08)" strokeDasharray="3 3" horizontal={false} />
+        <XAxis type="number" stroke="var(--muted-foreground)" tick={{ fontSize: 12 }} />
         <YAxis
           type="category"
           dataKey="name"
-          stroke="#71717a"
+          stroke="var(--muted-foreground)"
           width={110}
           tick={{ fontSize: 12 }}
         />
         <Tooltip
           formatter={(value) => formatCurrency(Number(value ?? 0))}
           contentStyle={{
-            backgroundColor: "#000000",
-            borderColor: "rgba(255,255,255,0.08)",
+            backgroundColor: "var(--surface-2)",
+            borderColor: "rgba(214, 225, 255, 0.08)",
             borderRadius: "12px",
           }}
         />
-        <Bar dataKey="value" fill="#ffffff" radius={[0, 8, 8, 0]} />
+        <Bar dataKey="value" fill="var(--chart-1)" radius={[0, 8, 8, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

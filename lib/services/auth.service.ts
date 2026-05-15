@@ -26,7 +26,7 @@ export const authService = {
   resetPassword: async (email: string) => {
     const supabase = createBrowserClient();
     return supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/update-password`,
     });
   },
 };

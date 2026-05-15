@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import DashboardShell from "@/components/layout/dashboard-shell";
 
 export const metadata = {
-  title: "NuruTrack • Dashboard",
+  title: "NuruTrack - Dashboard",
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

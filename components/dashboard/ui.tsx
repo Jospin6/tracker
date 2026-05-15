@@ -34,26 +34,25 @@ function pickMetricIcon(label: string) {
 }
 
 export const formControlClassName =
-  "w-full rounded-xl bg-black px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none ring-1 ring-white/10 transition focus:ring-white/20";
+  "app-input placeholder:text-zinc-500 focus:border-brand-400";
 
 export const formSelectClassName =
-  "w-full rounded-xl bg-black px-3.5 py-2.5 text-sm text-white outline-none ring-1 ring-white/10 transition focus:ring-white/20";
+  "app-input focus:border-brand-400";
 
 export const formTextareaClassName =
-  "w-full rounded-xl bg-black px-3.5 py-3 text-sm text-white placeholder:text-zinc-500 outline-none ring-1 ring-white/10 transition focus:ring-white/20";
+  "app-input min-h-32 resize-y placeholder:text-zinc-500 focus:border-brand-400";
 
 export const primaryButtonClassName =
-  "inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50";
+  "app-button-primary hover:brightness-[1.04]";
 
 export const secondaryButtonClassName =
-  "inline-flex items-center justify-center rounded-xl bg-black px-4 py-2.5 text-sm font-medium text-white ring-1 ring-white/10 transition hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50";
+  "app-button-secondary hover:border-white/20 hover:bg-white/8";
 
 export const subtleButtonClassName =
-  "inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-white/6 hover:text-white";
+  "app-button-subtle hover:bg-white/6 hover:text-white";
 
 export function FormField({
   children,
-  description,
   label,
 }: {
   children: ReactNode;
@@ -63,7 +62,6 @@ export function FormField({
   return (
     <label className="block space-y-2">
       <span className="text-sm font-medium text-zinc-100">{label}</span>
-      {description ? <p className="text-xs text-zinc-500">{description}</p> : null}
       {children}
     </label>
   );
@@ -75,7 +73,6 @@ export function InlineActions({ children }: { children: ReactNode }) {
 
 export function PageIntro({
   actions,
-  description,
   eyebrow,
   title,
 }: {
@@ -85,19 +82,14 @@ export function PageIntro({
   title: string;
 }) {
   return (
-    <section className="flex flex-col gap-6 border-b border-white/8 pb-6 lg:flex-row lg:items-end lg:justify-between">
+    <section className="flex flex-col gap-6 border-b border-white/6 pb-6 lg:flex-row lg:items-end lg:justify-between">
       <div className="max-w-3xl">
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
           {eyebrow}
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">
+        <h1 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
           {title}
         </h1>
-        {description ? (
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-            {description}
-          </p>
-        ) : null}
       </div>
       {actions ? <div>{actions}</div> : null}
     </section>
@@ -112,14 +104,13 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`rounded-2xl bg-black p-5 ring-1 ring-white/8 sm:p-6 ${className}`}>
+    <section className={`app-panel p-5 sm:p-6 ${className}`}>
       {children}
     </section>
   );
 }
 
 export function SectionTitle({
-  description,
   icon: Icon,
   title,
   trailing,
@@ -133,13 +124,12 @@ export function SectionTitle({
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex items-start gap-3">
         {Icon ? (
-          <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-black text-zinc-200 ring-1 ring-white/10">
+          <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/12 text-brand-200 ring-1 ring-brand-500/16">
             <Icon className="h-4 w-4" />
           </span>
         ) : null}
         <div>
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
-          {description ? <p className="mt-1 text-sm text-zinc-500">{description}</p> : null}
+          <h2 className="font-heading text-lg font-semibold text-white">{title}</h2>
         </div>
       </div>
       {trailing ? <div>{trailing}</div> : null}
@@ -161,7 +151,7 @@ export function MetricCard({
   const iconNode = icon ?? pickMetricIcon(label);
 
   return (
-    <article className="rounded-2xl bg-black p-5 ring-1 ring-white/8">
+    <article className="app-card p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
@@ -172,7 +162,7 @@ export function MetricCard({
           </p>
           {hint ? <p className="mt-3 text-sm text-zinc-500">{hint}</p> : null}
         </div>
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-black text-zinc-200 ring-1 ring-white/10">
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/12 text-brand-200 ring-1 ring-brand-500/16">
           {iconNode}
         </span>
       </div>
@@ -181,38 +171,38 @@ export function MetricCard({
 }
 
 const badgeMap: Record<string, string> = {
-  achieved: "bg-white/10 text-white",
+  achieved: "bg-brand-500/15 text-brand-200",
   active: "bg-white/10 text-white",
-  approved: "bg-white/10 text-white",
+  approved: "bg-brand-500/15 text-brand-200",
   archived: "bg-white/6 text-zinc-300",
   at_risk: "bg-white/6 text-zinc-300",
-  blocked: "bg-zinc-800 text-zinc-100",
-  cancelled: "bg-zinc-800 text-zinc-300",
-  completed: "bg-white/10 text-white",
-  contacted: "bg-white/10 text-white",
-  debt: "bg-zinc-800 text-zinc-100",
-  done: "bg-white/10 text-white",
+  blocked: "bg-rose-500/10 text-rose-200",
+  cancelled: "bg-rose-500/10 text-rose-200",
+  completed: "bg-brand-500/15 text-brand-200",
+  contacted: "bg-brand-500/15 text-brand-200",
+  debt: "bg-rose-500/10 text-rose-200",
+  done: "bg-brand-500/15 text-brand-200",
   draft: "bg-white/6 text-zinc-300",
   drafted: "bg-white/6 text-zinc-300",
-  expense: "bg-zinc-800 text-zinc-100",
+  expense: "bg-rose-500/10 text-rose-200",
   idea: "bg-white/6 text-zinc-300",
-  income: "bg-white/10 text-white",
+  income: "bg-brand-500/15 text-brand-200",
   in_progress: "bg-white/10 text-white",
   inactive: "bg-white/6 text-zinc-300",
-  investment: "bg-zinc-800 text-zinc-100",
-  lost: "bg-zinc-800 text-zinc-300",
+  investment: "bg-rose-500/10 text-rose-200",
+  lost: "bg-rose-500/10 text-rose-200",
   negotiating: "bg-white/10 text-white",
-  overdue: "bg-zinc-800 text-zinc-100",
-  on_track: "bg-white/10 text-white",
-  overspent: "bg-zinc-800 text-zinc-100",
-  paid: "bg-white/10 text-white",
+  overdue: "bg-rose-500/10 text-rose-200",
+  on_track: "bg-brand-500/15 text-brand-200",
+  overspent: "bg-rose-500/10 text-rose-200",
+  paid: "bg-brand-500/15 text-brand-200",
   partially_paid: "bg-white/10 text-white",
   paused: "bg-white/6 text-zinc-300",
   planned: "bg-white/6 text-zinc-300",
   prospect: "bg-white/6 text-zinc-300",
-  published: "bg-white/10 text-white",
-  scheduled: "bg-white/10 text-white",
-  sent: "bg-white/10 text-white",
+  published: "bg-brand-500/15 text-brand-200",
+  scheduled: "bg-brand-500/15 text-brand-200",
+  sent: "bg-brand-500/15 text-brand-200",
   todo: "bg-white/6 text-zinc-300",
   waiting: "bg-white/6 text-zinc-300",
 };
@@ -231,7 +221,6 @@ export function StatusBadge({ value }: { value: string }) {
 }
 
 export function EmptyState({
-  description,
   icon: Icon = AlertTriangle,
   title,
 }: {
@@ -240,14 +229,13 @@ export function EmptyState({
   title: string;
 }) {
   return (
-    <div className="rounded-2xl bg-black p-5 ring-1 ring-white/8">
+    <div className="app-card p-5">
       <div className="flex items-start gap-3">
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-black text-zinc-200 ring-1 ring-white/10">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/12 text-brand-200 ring-1 ring-brand-500/16">
           <Icon className="h-4 w-4" />
         </span>
         <div>
           <p className="font-medium text-white">{title}</p>
-          <p className="mt-2 text-sm text-zinc-500">{description}</p>
         </div>
       </div>
     </div>
@@ -271,7 +259,7 @@ export function MetaStrip({
         return (
           <div
             key={`${item.label}-${item.value}`}
-            className="rounded-2xl bg-black px-4 py-3 ring-1 ring-white/8"
+            className="app-tile px-4 py-3"
           >
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
               <Icon className="h-3.5 w-3.5" />
