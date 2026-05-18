@@ -233,12 +233,12 @@ function FinanceForm({
       </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Type">
+        <FormField label="Type de flux">
           <select name="type" defaultValue="income" className={formSelectClassName}>
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
-            <option value="investment">Investment</option>
-            <option value="debt">Debt</option>
+            <option value="income">Revenu</option>
+            <option value="expense">Depense</option>
+            <option value="investment">Investissement</option>
+            <option value="debt">Dette</option>
           </select>
         </FormField>
 
