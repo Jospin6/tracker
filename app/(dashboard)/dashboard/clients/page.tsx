@@ -98,8 +98,13 @@ function ClientLinkForm({
       </FormField>
 
       <FormField label="Activite">
-        <select name="activityId" defaultValue="" className={formSelectClassName}>
-          <option value="">Sans activite</option>
+        <select
+          name="activityId"
+          required
+          defaultValue={activities[0]?.id ?? ""}
+          className={formSelectClassName}
+        >
+          <option value="">Choisir une activite</option>
           {activities.map((activity) => (
             <option key={activity.id} value={activity.id}>
               {activity.label}

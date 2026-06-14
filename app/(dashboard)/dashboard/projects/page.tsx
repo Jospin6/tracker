@@ -39,7 +39,7 @@ export default async function ProjectsPage() {
           icon={<BriefcaseBusiness className="h-5 w-5" />}
           label="Projets"
           value={String(projects.length)}
-          hint={`${projects.filter((project) => !project.activityId).length} hors activite`}
+          hint="Dans l'activite courante"
         />
         <MetricCard
           icon={<UsersRound className="h-5 w-5" />}
@@ -80,7 +80,8 @@ export default async function ProjectsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <select
                 name="activityId"
-                defaultValue=""
+                required
+                defaultValue={activities[0]?.id ?? ""}
                 className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               >
                 <option value="">Choisir une activite</option>

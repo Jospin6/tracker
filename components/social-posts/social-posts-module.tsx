@@ -193,8 +193,13 @@ function ManualPostForm({
         </FormField>
 
         <FormField label="Activité">
-          <select name="activityId" defaultValue="" className={formSelectClassName}>
-            <option value="">Sans activité</option>
+          <select
+            name="activityId"
+            required
+            defaultValue={activities[0]?.id ?? ""}
+            className={formSelectClassName}
+          >
+            <option value="">Choisir une activite</option>
             {activities.map((activity) => (
               <option key={activity.id} value={activity.id}>
                 {activity.label}
@@ -376,8 +381,13 @@ function AiPostForm({
         </FormField>
 
         <FormField label="Activité">
-          <select name="activityId" defaultValue="" className={formSelectClassName}>
-            <option value="">Sans activité</option>
+          <select
+            name="activityId"
+            required
+            defaultValue={activities[0]?.id ?? ""}
+            className={formSelectClassName}
+          >
+            <option value="">Choisir une activite</option>
             {activities.map((activity) => (
               <option key={activity.id} value={activity.id}>
                 {activity.label}

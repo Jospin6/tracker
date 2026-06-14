@@ -2,6 +2,7 @@ import {
   buildOptions,
   createMaps,
   getWorkspaceGraph,
+  scopeWorkspaceGraphToActivity,
   type DashboardWorkspaceGraph,
 } from "@/lib/data/dashboard/graph";
 import {
@@ -21,18 +22,36 @@ import {
   sortByUpdatedDesc,
   startOfMonth,
 } from "@/lib/data/dashboard/utils";
+import { getWorkspaceContext } from "@/lib/auth/server";
+
+async function getScopedWorkspaceData() {
+  const [{ activeActivity }, graph] = await Promise.all([
+    getWorkspaceContext(),
+    getWorkspaceGraph(),
+  ]);
+  const scopedGraph = scopeWorkspaceGraphToActivity(
+    graph,
+    activeActivity?.id ?? null
+  );
+
+  return {
+    activeActivity,
+    graph,
+    scopedGraph,
+  };
+}
 
 export async function getDashboardData() {
-  const graph = await getWorkspaceGraph();
+  const { scopedGraph } = await getScopedWorkspaceData();
   const now = new Date();
   const monthStart = startOfMonth(now);
   const activitySummaries = sortByUpdatedDesc(
-    graph.activities.map((activity) => buildActivitySummary(activity, graph))
+    scopedGraph.activities.map((activity) => buildActivitySummary(activity, scopedGraph))
   );
   const projectSummaries = sortByUpdatedDesc(
-    graph.projects.map((project) => buildProjectSummary(project, graph))
+    scopedGraph.projects.map((project) => buildProjectSummary(project, scopedGraph))
   );
-  const currentMonthTransactions = graph.transactions.filter((transaction) => {
+  const currentMonthTransactions = scopedGraph.transactions.filter((transaction) => {
     const date = new Date(transaction.transactionDate);
     return date >= monthStart;
   });
@@ -42,7 +61,7 @@ export async function getDashboardData() {
   const monthlyExpense = currentMonthTransactions
     .filter((transaction) => transaction.type === "expense")
     .reduce((total, transaction) => total + transaction.amount, 0);
-  const openTasks = graph.tasks.filter(
+  const openTasks = scopedGraph.tasks.filter(
     (task) => task.status !== "done" && task.status !== "cancelled"
   );
   const trendMap = new Map<string, number>();
@@ -52,7 +71,7 @@ export async function getDashboardData() {
     trendMap.set(monthKey(date), 0);
   }
 
-  for (const transaction of graph.transactions) {
+  for (const transaction of scopedGraph.transactions) {
     const key = monthKey(new Date(transaction.transactionDate));
 
     if (!trendMap.has(key)) {
@@ -71,23 +90,23 @@ export async function getDashboardData() {
           project.overdueTasks > 0 || project.outstanding > 0 || project.status === "blocked"
       )
       .slice(0, 4),
-    clients: graph.clients,
-    goals: graph.goals.map((goal) => enrichGoal(goal, graph)),
-    invoices: graph.invoices.map((invoice) => enrichInvoice(invoice, graph)),
+    clients: scopedGraph.clients,
+    goals: scopedGraph.goals.map((goal) => enrichGoal(goal, scopedGraph)),
+    invoices: scopedGraph.invoices.map((invoice) => enrichInvoice(invoice, scopedGraph)),
     metrics: {
       activeActivities: activitySummaries.filter((activity) => activity.status === "active")
         .length,
       activeProjects: projectSummaries.filter(
         (project) => project.status !== "completed" && project.status !== "cancelled"
       ).length,
-      clients: graph.clients.length,
-      goalAverageProgress: average(graph.goals.map((goal) => goal.progress)),
+      clients: scopedGraph.clients.length,
+      goalAverageProgress: average(scopedGraph.goals.map((goal) => goal.progress)),
       monthlyBalance: monthlyIncome - monthlyExpense,
       monthlyExpense,
       monthlyIncome,
       openTasks: openTasks.length,
-      scheduledPosts: graph.posts.filter((post) => post.status === "scheduled").length,
-      unpaidInvoices: graph.invoices.reduce(
+      scheduledPosts: scopedGraph.posts.filter((post) => post.status === "scheduled").length,
+      unpaidInvoices: scopedGraph.invoices.reduce(
         (total, invoice) => total + (invoice.total - invoice.paidAmount),
         0
       ),
@@ -96,15 +115,15 @@ export async function getDashboardData() {
     overdueTasks: sortByDateAsc(
       openTasks
         .filter((task) => task.dueDate && new Date(task.dueDate) < now)
-        .map((task) => enrichTask(task, graph)),
+        .map((task) => enrichTask(task, scopedGraph)),
       (task) => task.dueDate
     ).slice(0, 6),
-    posts: graph.posts.map((post) => enrichPost(post, graph)),
+    posts: scopedGraph.posts.map((post) => enrichPost(post, scopedGraph)),
     projects: projectSummaries.slice(0, 6),
-    recentTransactions: graph.transactions
+    recentTransactions: scopedGraph.transactions
       .slice(0, 6)
-      .map((transaction) => enrichTransaction(transaction, graph)),
-    tasks: graph.tasks.map((task) => enrichTask(task, graph)),
+      .map((transaction) => enrichTransaction(transaction, scopedGraph)),
+    tasks: scopedGraph.tasks.map((task) => enrichTask(task, scopedGraph)),
     trendData: Array.from(trendMap.entries()).map(([key, value]) => {
       const [year, month] = key.split("-");
       return {
@@ -113,12 +132,12 @@ export async function getDashboardData() {
       };
     }),
     upcomingInvoices: sortByDateAsc(
-      graph.invoices
+      scopedGraph.invoices
         .filter((invoice) => invoice.status !== "paid" && invoice.status !== "cancelled")
-        .map((invoice) => enrichInvoice(invoice, graph)),
+        .map((invoice) => enrichInvoice(invoice, scopedGraph)),
       (invoice) => invoice.dueAt
     ).slice(0, 6),
-    workspaceId: graph.workspaceId,
+    workspaceId: scopedGraph.workspaceId,
   };
 }
 
@@ -150,13 +169,13 @@ export async function getActivityDetailPageData(activityId: string) {
 }
 
 export async function getProjectsPageData() {
-  const graph = await getWorkspaceGraph();
+  const { scopedGraph } = await getScopedWorkspaceData();
 
   return {
-    activities: buildOptions(graph.activities),
-    clients: buildOptions(graph.clients),
+    activities: buildOptions(scopedGraph.activities),
+    clients: buildOptions(scopedGraph.clients),
     projects: sortByUpdatedDesc(
-      graph.projects.map((project) => buildProjectSummary(project, graph))
+      scopedGraph.projects.map((project) => buildProjectSummary(project, scopedGraph))
     ),
   };
 }
@@ -176,46 +195,46 @@ export async function getProjectDetailPageData(projectId: string) {
 }
 
 export async function getGoalsPageData() {
-  const graph = await getWorkspaceGraph();
+  const { scopedGraph } = await getScopedWorkspaceData();
 
   return {
-    activities: buildOptions(graph.activities),
-    goals: sortByUpdatedDesc(graph.goals).map((goal) => enrichGoal(goal, graph)),
-    projects: buildOptions(graph.projects),
+    activities: buildOptions(scopedGraph.activities),
+    goals: sortByUpdatedDesc(scopedGraph.goals).map((goal) => enrichGoal(goal, scopedGraph)),
+    projects: buildOptions(scopedGraph.projects),
   };
 }
 
 export async function getTasksPageData() {
-  const graph = await getWorkspaceGraph();
+  const { scopedGraph } = await getScopedWorkspaceData();
 
   return {
-    activities: buildOptions(graph.activities),
-    goals: buildOptions(graph.goals),
-    projects: buildOptions(graph.projects),
-    tasks: sortByUpdatedDesc(graph.tasks).map((task) => enrichTask(task, graph)),
+    activities: buildOptions(scopedGraph.activities),
+    goals: buildOptions(scopedGraph.goals),
+    projects: buildOptions(scopedGraph.projects),
+    tasks: sortByUpdatedDesc(scopedGraph.tasks).map((task) => enrichTask(task, scopedGraph)),
   };
 }
 
 export async function getClientsPageData() {
-  const graph = await getWorkspaceGraph();
-  const activityOptions = buildOptions(graph.activities);
-  const projectOptions = buildOptions(graph.projects);
-  const activityMap = createMaps(graph).activityMap;
-  const projectMap = createMaps(graph).projectMap;
+  const { scopedGraph } = await getScopedWorkspaceData();
+  const activityOptions = buildOptions(scopedGraph.activities);
+  const projectOptions = buildOptions(scopedGraph.projects);
+  const activityMap = createMaps(scopedGraph).activityMap;
+  const projectMap = createMaps(scopedGraph).projectMap;
 
   return {
     activities: activityOptions,
-    clients: sortByUpdatedDesc(graph.clients).map((client) => {
+    clients: sortByUpdatedDesc(scopedGraph.clients).map((client) => {
       const relatedActivityIds = new Set<string>();
       const relatedProjectIds = new Set<string>();
 
-      for (const link of graph.activityClients) {
+      for (const link of scopedGraph.activityClients) {
         if (link.clientId === client.id) {
           relatedActivityIds.add(link.activityId);
         }
       }
 
-      for (const project of graph.projects) {
+      for (const project of scopedGraph.projects) {
         if (project.clientId === client.id) {
           relatedProjectIds.add(project.id);
 
@@ -225,7 +244,7 @@ export async function getClientsPageData() {
         }
       }
 
-      for (const link of graph.projectClients) {
+      for (const link of scopedGraph.projectClients) {
         if (link.clientId === client.id) {
           relatedProjectIds.add(link.projectId);
 
@@ -346,14 +365,14 @@ function budgetMatchesScope(
 }
 
 export async function getBudgetPageData() {
-  const graph = await getWorkspaceGraph();
+  const { scopedGraph } = await getScopedWorkspaceData();
   const now = new Date();
   const monthStart = startOfMonth(now);
   const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const quarterStart = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  const { activityMap, projectMap } = createMaps(graph);
-  const enrichedTransactions = graph.transactions.map((transaction) =>
-    enrichTransaction(transaction, graph)
+  const { activityMap, projectMap } = createMaps(scopedGraph);
+  const enrichedTransactions = scopedGraph.transactions.map((transaction) =>
+    enrichTransaction(transaction, scopedGraph)
   );
   const incomeTransactions = enrichedTransactions.filter(
     (transaction) => transaction.type === "income"
@@ -431,10 +450,10 @@ export async function getBudgetPageData() {
     (transaction) => transaction.paymentMethod || "Non precise"
   ).slice(0, 8);
   const catchAllBudgetNames = new Set(["budget", "general", "global", "principal", "main"]);
-  const budgets = sortByUpdatedDesc(graph.budgets).map((budget) => {
+  const budgets = sortByUpdatedDesc(scopedGraph.budgets).map((budget) => {
     const normalizedBudgetName = normalizeBudgetKey(budget.name);
     const scopedTransactions = enrichedTransactions.filter((transaction) => {
-      if (!budgetMatchesScope(budget, transaction, graph)) {
+      if (!budgetMatchesScope(budget, transaction, scopedGraph)) {
         return false;
       }
 
@@ -512,10 +531,10 @@ export async function getBudgetPageData() {
   const monthlySnapshots = [...monthlyTrend].reverse();
 
   return {
-    activities: buildOptions(graph.activities),
+    activities: buildOptions(scopedGraph.activities),
     budgets,
-    clients: buildOptions(graph.clients),
-    projects: buildOptions(graph.projects),
+    clients: buildOptions(scopedGraph.clients),
+    projects: buildOptions(scopedGraph.projects),
     summary: {
       activeBudgetCount: activeBudgets.length,
       averageExpenseTicket:
@@ -553,22 +572,24 @@ export async function getFinancesPageData() {
 }
 
 export async function getInvoicesPageData() {
-  const graph = await getWorkspaceGraph();
+  const { scopedGraph } = await getScopedWorkspaceData();
 
   return {
-    clients: buildOptions(graph.clients),
-    invoices: graph.invoices.map((invoice) => enrichInvoice(invoice, graph)),
-    projects: buildOptions(graph.projects),
+    clients: buildOptions(scopedGraph.clients),
+    invoices: scopedGraph.invoices.map((invoice) => enrichInvoice(invoice, scopedGraph)),
+    projects: buildOptions(scopedGraph.projects),
   };
 }
 
 export async function getSocialPostsPageData() {
-  const graph = await getWorkspaceGraph();
-  const maps = createMaps(graph);
-  const posts = sortByUpdatedDesc(graph.posts).map((post) => enrichPost(post, graph));
+  const { scopedGraph } = await getScopedWorkspaceData();
+  const maps = createMaps(scopedGraph);
+  const posts = sortByUpdatedDesc(scopedGraph.posts).map((post) =>
+    enrichPost(post, scopedGraph)
+  );
   const deliveries = sortByDateAsc(
-    graph.socialPostDeliveries.map((delivery) => {
-      const post = graph.posts.find((row) => row.id === delivery.postId) ?? null;
+    scopedGraph.socialPostDeliveries.map((delivery) => {
+      const post = scopedGraph.posts.find((row) => row.id === delivery.postId) ?? null;
       const channel = delivery.channelId
         ? maps.socialChannelMap.get(delivery.channelId) ?? null
         : null;
@@ -582,8 +603,8 @@ export async function getSocialPostsPageData() {
     }),
     (delivery) => delivery.scheduledAt ?? delivery.createdAt
   );
-  const channels = sortByUpdatedDesc(graph.socialChannels).map((channel) => {
-    const relatedDeliveries = graph.socialPostDeliveries.filter(
+  const channels = sortByUpdatedDesc(scopedGraph.socialChannels).map((channel) => {
+    const relatedDeliveries = scopedGraph.socialPostDeliveries.filter(
       (delivery) => delivery.channelId === channel.id
     );
 
@@ -601,7 +622,7 @@ export async function getSocialPostsPageData() {
     };
   });
   const engagementSortedPosts = [...posts].sort(
-    (left, right) =>
+      (left, right) =>
       right.likes +
       right.comments +
       right.shares -
@@ -609,7 +630,7 @@ export async function getSocialPostsPageData() {
   );
 
   return {
-    activities: buildOptions(graph.activities),
+    activities: buildOptions(scopedGraph.activities),
     calendar: deliveries,
     channels,
     channelOptions: channels.map((channel) => ({
@@ -619,9 +640,9 @@ export async function getSocialPostsPageData() {
     deliveryQueue: deliveries.filter((delivery) =>
       ["scheduled", "failed", "processing"].includes(delivery.status)
     ),
-    goals: buildOptions(graph.goals),
+    goals: buildOptions(scopedGraph.goals),
     posts,
-    projects: buildOptions(graph.projects),
+    projects: buildOptions(scopedGraph.projects),
     summary: {
       autoPublishPosts: posts.filter((post) => post.autoPublish).length,
       connectedChannels: channels.filter((channel) => channel.status === "connected").length,

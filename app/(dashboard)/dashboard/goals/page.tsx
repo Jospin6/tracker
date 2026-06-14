@@ -80,10 +80,11 @@ export default async function GoalsPage() {
               </select>
               <select
                 name="activityId"
-                defaultValue=""
+                required
+                defaultValue={activities[0]?.id ?? ""}
                 className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
               >
-                <option value="">Sans activite</option>
+                <option value="">Choisir une activite</option>
                 {activities.map((activity) => (
                   <option key={activity.id} value={activity.id}>
                     {activity.label}

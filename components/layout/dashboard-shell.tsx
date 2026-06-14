@@ -9,7 +9,8 @@ export default async function DashboardShell({
 }: {
   children: ReactNode;
 }) {
-  const { activeWorkspace, workspaces } = await getWorkspaceContext();
+  const { activeActivity, activeWorkspace, activities, workspaces } =
+    await getWorkspaceContext();
 
   return (
     <div className="min-h-screen bg-transparent">
@@ -17,7 +18,9 @@ export default async function DashboardShell({
         <Sidebar />
         <div className="app-panel min-h-[calc(100vh-2rem)] overflow-hidden">
           <Header
+            activeActivityId={activeActivity?.id ?? null}
             activeWorkspaceId={activeWorkspace.id}
+            activities={activities}
             workspaces={workspaces.map((workspace) => ({
               id: workspace.id,
               name: workspace.name,

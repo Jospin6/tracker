@@ -103,8 +103,13 @@ function TransactionForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Activite">
-          <select name="activityId" defaultValue="" className={formSelectClassName}>
-            <option value="">Sans activite</option>
+          <select
+            name="activityId"
+            required
+            defaultValue={activities[0]?.id ?? ""}
+            className={formSelectClassName}
+          >
+            <option value="">Choisir une activite</option>
             {activities.map((activity) => (
               <option key={activity.id} value={activity.id}>
                 {activity.label}
@@ -206,8 +211,13 @@ function BudgetForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Activite">
-          <select name="activityId" defaultValue="" className={formSelectClassName}>
-            <option value="">Globale</option>
+          <select
+            name="activityId"
+            required
+            defaultValue={activities[0]?.id ?? ""}
+            className={formSelectClassName}
+          >
+            <option value="">Choisir une activite</option>
             {activities.map((activity) => (
               <option key={activity.id} value={activity.id}>
                 {activity.label}

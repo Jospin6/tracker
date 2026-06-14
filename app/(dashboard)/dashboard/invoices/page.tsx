@@ -65,10 +65,11 @@ export default async function InvoicesPage() {
               </select>
               <select
                 name="projectId"
+                required
                 defaultValue=""
                 className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               >
-                <option value="">Projet</option>
+                <option value="">Choisir un projet</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.label}

@@ -192,6 +192,85 @@ export function createMaps(graph: DashboardWorkspaceGraph) {
   };
 }
 
+export function scopeWorkspaceGraphToActivity(
+  graph: DashboardWorkspaceGraph,
+  activityId: string | null
+) {
+  if (!activityId) {
+    return {
+      ...graph,
+      activities: [],
+      activityClients: [],
+      budgets: [],
+      clients: [],
+      goals: [],
+      invoices: [],
+      posts: [],
+      projectClients: [],
+      projects: [],
+      socialPostDeliveries: [],
+      socialPostDetails: [],
+      tasks: [],
+      transactions: [],
+    };
+  }
+
+  const projectIds = getProjectIdsForActivity(activityId, graph);
+  const clientIds = getActivityClientIds(activityId, graph);
+  const postIds = new Set(
+    graph.posts
+      .filter(
+        (post) =>
+          post.activityId === activityId ||
+          (post.projectId ? projectIds.has(post.projectId) : false)
+      )
+      .map((post) => post.id)
+  );
+
+  return {
+    ...graph,
+    activities: graph.activities.filter((activity) => activity.id === activityId),
+    activityClients: graph.activityClients.filter(
+      (link) => link.activityId === activityId
+    ),
+    budgets: graph.budgets.filter(
+      (budget) =>
+        budget.activityId === activityId ||
+        (budget.projectId ? projectIds.has(budget.projectId) : false)
+    ),
+    clients: graph.clients.filter((client) => clientIds.has(client.id)),
+    goals: graph.goals.filter(
+      (goal) =>
+        goal.activityId === activityId ||
+        (goal.projectId ? projectIds.has(goal.projectId) : false)
+    ),
+    invoices: graph.invoices.filter(
+      (invoice) => invoice.projectId ? projectIds.has(invoice.projectId) : false
+    ),
+    posts: graph.posts.filter((post) => postIds.has(post.id)),
+    projectClients: graph.projectClients.filter((link) =>
+      projectIds.has(link.projectId)
+    ),
+    projects: graph.projects.filter((project) => project.activityId === activityId),
+    socialPostDeliveries: graph.socialPostDeliveries.filter((delivery) =>
+      postIds.has(delivery.postId)
+    ),
+    socialPostDetails: graph.socialPostDetails.filter((detail) =>
+      postIds.has(detail.postId)
+    ),
+    tasks: graph.tasks.filter(
+      (task) =>
+        task.activityId === activityId ||
+        (task.projectId ? projectIds.has(task.projectId) : false)
+    ),
+    transactions: graph.transactions.filter(
+      (transaction) =>
+        transaction.activityId === activityId ||
+        (transaction.projectId ? projectIds.has(transaction.projectId) : false)
+    ),
+  };
+}
+
 export function buildOptions(
   rows: Array<{ id: string; name: string } | { id: string; title: string }>
 ): DashboardOption[] {
