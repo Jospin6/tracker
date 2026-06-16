@@ -14,7 +14,7 @@ export default async function DashboardShell({
 
   return (
     <div className="min-h-screen bg-transparent">
-      <div className="mx-auto min-h-screen max-w-[1600px] px-3 py-3 lg:px-4 lg:py-4 lg:pl-[20rem]">
+      <div className="mx-auto min-h-screen max-w-400 px-3 py-3 lg:px-4 lg:py-4 lg:pl-80">
         <Sidebar />
         <div className="app-panel min-h-[calc(100vh-2rem)] overflow-hidden">
           <Header

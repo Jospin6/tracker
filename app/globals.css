@@ -153,7 +153,7 @@ option {
 }
 
 @utility app-panel {
-  @apply rounded-[1.75rem] border backdrop-blur-xl;
+  @apply  backdrop-blur-xl;
   background:
     linear-gradient(180deg, rgb(22 27 37 / 94%) 0%, rgb(14 18 25 / 94%) 100%);
   border-color: var(--surface-border);

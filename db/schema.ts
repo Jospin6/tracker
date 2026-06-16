@@ -1209,6 +1209,118 @@ export const attachments = pgTable(
   ]
 );
 
+export const companies = pgTable(
+  "companies",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "restrict" }),
+
+    activityId: uuid("activity_id").references(() => activities.id, {
+      onDelete: "set null",
+    }),
+
+    name: text("name").notNull(),
+    legalName: text("legal_name"),
+    industry: text("industry"),
+
+    email: text("email"),
+    phone: text("phone"),
+    website: text("website"),
+
+    address: text("address"),
+    city: text("city"),
+    country: text("country"),
+
+    status: clientStatus("status").notNull().default("prospect"),
+    source: text("source"),
+    notes: text("notes"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("companies_workspace_id_idx").on(table.workspaceId),
+    index("companies_created_by_idx").on(table.createdBy),
+    index("companies_activity_id_idx").on(table.activityId),
+    index("companies_status_idx").on(table.status),
+    index("companies_name_idx").on(table.name),
+    index("companies_email_idx").on(table.email),
+  ]
+);
+
+export const contacts = pgTable(
+  "contacts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "restrict" }),
+
+    activityId: uuid("activity_id").references(() => activities.id, {
+      onDelete: "set null",
+    }),
+
+    companyId: uuid("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    fullName: text("full_name").notNull(),
+
+    jobTitle: text("job_title"),
+    department: text("department"),
+
+    email: text("email"),
+    phone: text("phone"),
+    whatsapp: text("whatsapp"),
+    linkedinUrl: text("linkedin_url"),
+
+    status: clientStatus("status").notNull().default("prospect"),
+    source: text("source"),
+    notes: text("notes"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("contacts_workspace_id_idx").on(table.workspaceId),
+    index("contacts_created_by_idx").on(table.createdBy),
+    index("contacts_activity_id_idx").on(table.activityId),
+    index("contacts_company_id_idx").on(table.companyId),
+    index("contacts_status_idx").on(table.status),
+    index("contacts_email_idx").on(table.email),
+    index("contacts_phone_idx").on(table.phone),
+  ]
+);
+
+
+
+
+
+
 /**
  * Inferred types
  */
@@ -1272,3 +1384,16 @@ export type NewReport = typeof reports.$inferInsert;
 
 export type Attachment = typeof attachments.$inferSelect;
 export type NewAttachment = typeof attachments.$inferInsert;
+
+export type Company = typeof companies.$inferSelect;
+export type NewCompany = typeof companies.$inferInsert;
+
+export type Contact = typeof contacts.$inferSelect;
+export type NewContact = typeof contacts.$inferInsert;
+
+
+
+
+
+
+

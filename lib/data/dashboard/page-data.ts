@@ -485,13 +485,16 @@ export async function getBudgetPageData() {
       (!budget.periodStart || new Date(budget.periodStart) < nextMonthStart) &&
       (!budget.periodEnd || new Date(budget.periodEnd) >= monthStart);
     const projectName = budget.projectId ? projectMap.get(budget.projectId)?.name ?? null : null;
-    const activityName =
-      (budget.activityId ? activityMap.get(budget.activityId)?.name ?? null : null) ??
-      (projectName && budget.projectId
-        ? projectMap.get(budget.projectId)?.activityId
-          ? activityMap.get(projectMap.get(budget.projectId)?.activityId ?? "")?.name ?? null
-          : null
-        : null);
+    const activityName = (() => {
+      const direct = budget.activityId ? activityMap.get(budget.activityId)?.name ?? null : null;
+      if (direct) return direct;
+      if (projectName && budget.projectId) {
+        const proj = projectMap.get(budget.projectId);
+        const projActivityId = proj?.activityId ?? null;
+        return projActivityId ? activityMap.get(projActivityId)?.name ?? null : null;
+      }
+      return null;
+    })();
 
     return {
       ...budget,
