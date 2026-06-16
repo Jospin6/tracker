@@ -1,7 +1,12 @@
 
-import { Building2, Plus } from "lucide-react";
+import { Building2, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 
-import { createCompanyAction } from "@/app/actions";
+import {
+  createCompanyAction,
+  deleteCompanyAction,
+  updateCompanyAction,
+} from "@/app/actions";
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { ResponsiveFormDialog } from "@/components/dashboard/responsive-form-dialog";
 import {
   EmptyState,
@@ -13,9 +18,11 @@ import {
   formControlClassName,
   formSelectClassName,
   formTextareaClassName,
+  iconButtonClassName,
   primaryButtonClassName,
 } from "@/components/dashboard/ui";
 import { SubmitButton } from "@/components/shared/submit-button";
+import CompanyEditForm from "@/components/dashboard/company-edit-form";
 import { getCompaniesPageData } from "@/lib/data/dashboard";
 
 function CompanyForm({ activities }: { activities: Array<{ id: string; label: string }> }) {
@@ -128,30 +135,110 @@ export default async function CompaniesPage() {
 
       <Panel>
         <SectionTitle icon={Building2} title="Entreprises" description="Liste des entreprises suivies." />
-        <div className="grid gap-4 md:grid-cols-2">
-          {companies.length ? (
-            companies.map((company) => (
-              <article key={company.id} className="rounded-xl bg-black p-5 ring-1 ring-white/8">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{company.name}</h3>
-                    <p className="mt-2 text-sm text-zinc-500">{company.industry || "Sans secteur"}</p>
-                  </div>
-                  <StatusBadge value={company.status} />
-                </div>
+        {companies.length ? (
+          <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
+            <table className="min-w-full border-collapse text-left">
+              <thead className="border-b border-white/10 bg-white/5">
+                <tr>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Nom</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Industrie</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Statut</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Email</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Téléphone</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Contacts</th>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {companies.map((company) => (
+                  <tr key={company.id} className="hover:bg-white/5">
+                    <td className="px-4 py-4 align-top text-sm text-white">{company.name}</td>
+                    <td className="px-4 py-4 align-top text-sm text-zinc-200">{company.industry || "Sans secteur"}</td>
+                    <td className="px-4 py-4 align-top"><StatusBadge value={company.status} /></td>
+                    <td className="px-4 py-4 align-top text-sm text-zinc-200">{company.email || "-"}</td>
+                    <td className="px-4 py-4 align-top text-sm text-zinc-200">{company.phone || "-"}</td>
+                    <td className="px-4 py-4 align-top text-sm text-zinc-200">{company.contactCount}</td>
+                    <td className="px-4 py-4 align-top">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Drawer direction="right">
+                          <DrawerTrigger asChild>
+                            <button type="button" className={iconButtonClassName} aria-label="Voir">
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          </DrawerTrigger>
+                          <DrawerContent className="max-w-md overflow-y-auto p-4 overflow-x-hidden">
+                            <DrawerHeader>
+                              <DrawerTitle>Détails de l'entreprise</DrawerTitle>
+                              <DrawerDescription>Informations de l'entreprise sélectionnée.</DrawerDescription>
+                            </DrawerHeader>
+                            <div className="space-y-3 text-sm text-zinc-200">
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Nom</p>
+                                <p className="mt-1 text-white">{company.name}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Industrie</p>
+                                <p className="mt-1">{company.industry || "Sans secteur"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Statut</p>
+                                <p className="mt-1">{company.status}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Email</p>
+                                <p className="mt-1">{company.email || "-"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Téléphone</p>
+                                <p className="mt-1">{company.phone || "-"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Contacts</p>
+                                <p className="mt-1">{company.contactCount}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Notes</p>
+                                <p className="mt-1 text-zinc-400">{company.notes || "Aucune note"}</p>
+                              </div>
+                            </div>
+                            <DrawerClose asChild>
+                              <button type="button" className="mt-6 app-button-secondary w-full">
+                                Fermer
+                              </button>
+                            </DrawerClose>
+                          </DrawerContent>
+                        </Drawer>
 
-                <div className="mt-4 space-y-2 text-sm text-zinc-300">
-                  <p>{company.legalName || "Pas de raison sociale"}</p>
-                  <p>{company.email || "Pas d'email"}</p>
-                  <p>{company.phone || "Pas de téléphone"}</p>
-                  <p>{company.contactCount} contact(s)</p>
-                </div>
-              </article>
-            ))
-          ) : (
-            <EmptyState title="Aucune entreprise" description="Créez votre première entreprise." />
-          )}
-        </div>
+                        <Drawer direction="right">
+                          <DrawerTrigger asChild>
+                            <button type="button" className={iconButtonClassName} aria-label="Éditer">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          </DrawerTrigger>
+                          <DrawerContent className="max-w-md overflow-y-auto p-4 overflow-x-hidden">
+                            <DrawerHeader>
+                              <DrawerTitle>Modifier l'entreprise</DrawerTitle>
+                            </DrawerHeader>
+                            <CompanyEditForm action={updateCompanyAction} company={company} activities={activities} />
+                          </DrawerContent>
+                        </Drawer>
+
+                        <form action={deleteCompanyAction} className="m-0">
+                          <input type="hidden" name="companyId" value={company.id} />
+                          <button type="submit" className={iconButtonClassName} aria-label="Supprimer">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState title="Aucune entreprise" description="Créez votre première entreprise." />
+        )}
       </Panel>
     </div>
   );

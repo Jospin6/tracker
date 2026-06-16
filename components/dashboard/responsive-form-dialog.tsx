@@ -25,7 +25,7 @@ export function ResponsiveFormDialog({
   mobileContent: ReactNode;
   title: string;
   triggerClassName: string;
-  triggerLabel: string;
+  triggerLabel: ReactNode;
 }) {
   return (
     <>

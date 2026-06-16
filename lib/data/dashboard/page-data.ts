@@ -222,8 +222,16 @@ export async function getClientsPageData() {
   const activityMap = createMaps(scopedGraph).activityMap;
   const projectMap = createMaps(scopedGraph).projectMap;
 
+  const companyMap = createMaps(scopedGraph).companyMap;
+  const contactsWithCompany = scopedGraph.contacts.map((contact) => ({
+    ...contact,
+    companyName: contact.companyId ? companyMap.get(contact.companyId)?.name ?? "" : "",
+  }));
+
   return {
     activities: activityOptions,
+    contacts: buildOptions(contactsWithCompany.map((contact) => ({ id: contact.id, name: contact.fullName })) as Array<{ id: string; name: string }>),
+    contactsList: contactsWithCompany,
     clients: sortByUpdatedDesc(scopedGraph.clients).map((client) => {
       const relatedActivityIds = new Set<string>();
       const relatedProjectIds = new Set<string>();

@@ -239,18 +239,8 @@ export function scopeWorkspaceGraphToActivity(
   activityId: string | null
 ) {
   if (!activityId) {
-    return {
-      ...graph,
-      activities: [],
-      activityClients: [],
-      budgets: [],
-      clients: [],
-    companies: [],
-    contacts: [],
-      socialPostDetails: [],
-      tasks: [],
-      transactions: [],
-    };
+    // No activity selected: return full workspace graph so pages can show all data
+    return graph;
   }
 
   const projectIds = getProjectIdsForActivity(activityId, graph);

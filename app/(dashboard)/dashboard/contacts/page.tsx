@@ -1,8 +1,13 @@
 
 
-import { Briefcase, Plus } from "lucide-react";
+import { Briefcase, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 
-import { createContactAction } from "@/app/actions";
+import {
+  createContactAction,
+  deleteContactAction,
+  updateContactAction,
+} from "@/app/actions";
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { ResponsiveFormDialog } from "@/components/dashboard/responsive-form-dialog";
 import {
   EmptyState,
@@ -14,9 +19,11 @@ import {
   formControlClassName,
   formSelectClassName,
   formTextareaClassName,
+  iconButtonClassName,
   primaryButtonClassName,
 } from "@/components/dashboard/ui";
 import { SubmitButton } from "@/components/shared/submit-button";
+import ContactEditForm from "@/components/dashboard/contact-edit-form";
 import { getContactsPageData } from "@/lib/data/dashboard";
 
 function ContactForm({
@@ -152,30 +159,108 @@ export default async function ContactsPage() {
 
       <Panel>
         <SectionTitle icon={Briefcase} title="Contacts" description="Liste des contacts suivis." />
-        <div className="grid gap-4 md:grid-cols-2">
-          {contacts.length ? (
-            contacts.map((contact) => (
-              <article key={contact.id} className="rounded-xl bg-black p-5 ring-1 ring-white/8">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{contact.fullName}</h3>
-                    <p className="mt-2 text-sm text-zinc-500">{contact.jobTitle || "Pas de poste"}</p>
-                  </div>
-                  <StatusBadge value={contact.status} />
-                </div>
+        {contacts.length ? (
+          <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
+            <table className="min-w-full border-collapse text-left">
+              <thead className="border-b border-white/10 bg-white/5">
+                <tr>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Nom</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Entreprise</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Poste</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Email</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Téléphone</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {contacts.map((contact) => (
+                  <tr key={contact.id} className="hover:bg-white/5">
+                    <td className="px-4 py-4 align-top text-sm text-white">{contact.fullName}</td>
+                    <td className="px-4 py-4 align-top text-sm text-zinc-200">{contact.companyName || "Aucune entreprise"}</td>
+                    <td className="px-4 py-4 align-top text-sm text-zinc-200">{contact.jobTitle || "Pas de poste"}</td>
+                    <td className="px-4 py-4 align-top text-sm text-zinc-200">{contact.email || "-"}</td>
+                    <td className="px-4 py-4 align-top text-sm text-zinc-200">{contact.phone || "-"}</td>
+                    <td className="px-4 py-4 align-top">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Drawer direction="right">
+                          <DrawerTrigger asChild>
+                            <button type="button" className={iconButtonClassName} aria-label="Voir">
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          </DrawerTrigger>
+                          <DrawerContent className="max-w-md overflow-y-auto p-4 overflow-x-hidden">
+                            <DrawerHeader>
+                              <DrawerTitle>Détails du contact</DrawerTitle>
+                              <DrawerDescription>Informations du contact sélectionné.</DrawerDescription>
+                            </DrawerHeader>
+                            <div className="space-y-3 text-sm text-zinc-200">
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Nom</p>
+                                <p className="mt-1 text-white">{contact.fullName}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Entreprise</p>
+                                <p className="mt-1">{contact.companyName || "Aucune entreprise"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Poste</p>
+                                <p className="mt-1">{contact.jobTitle || "Pas de poste"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Email</p>
+                                <p className="mt-1">{contact.email || "-"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Téléphone</p>
+                                <p className="mt-1">{contact.phone || "-"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Statut</p>
+                                <p className="mt-1">{contact.status}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Notes</p>
+                                <p className="mt-1 text-zinc-400">{contact.notes || "Aucune note"}</p>
+                              </div>
+                            </div>
+                            <DrawerClose asChild>
+                              <button type="button" className="mt-6 app-button-secondary w-full">
+                                Fermer
+                              </button>
+                            </DrawerClose>
+                          </DrawerContent>
+                        </Drawer>
 
-                <div className="mt-4 space-y-2 text-sm text-zinc-300">
-                  <p>{contact.companyName || "Aucune entreprise"}</p>
-                  <p>{contact.email || "Pas d'email"}</p>
-                  <p>{contact.phone || "Pas de téléphone"}</p>
-                  <p>{contact.linkedinUrl || "Pas de LinkedIn"}</p>
-                </div>
-              </article>
-            ))
-          ) : (
-            <EmptyState title="Aucun contact" description="Créez votre premier contact." />
-          )}
-        </div>
+                        <Drawer direction="right">
+                          <DrawerTrigger asChild>
+                            <button type="button" className={iconButtonClassName} aria-label="Éditer">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          </DrawerTrigger>
+                          <DrawerContent className="max-w-md overflow-y-auto p-4 overflow-x-hidden">
+                            <DrawerHeader>
+                              <DrawerTitle>Modifier le contact</DrawerTitle>
+                            </DrawerHeader>
+                            <ContactEditForm action={updateContactAction} contact={contact} companies={companies} activities={activities} />
+                          </DrawerContent>
+                        </Drawer>
+
+                        <form action={deleteContactAction} className="m-0">
+                          <input type="hidden" name="contactId" value={contact.id} />
+                          <button type="submit" className={iconButtonClassName} aria-label="Supprimer">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState title="Aucun contact" description="Créez votre premier contact." />
+        )}
       </Panel>
     </div>
   );

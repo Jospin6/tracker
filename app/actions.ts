@@ -787,11 +787,108 @@ export async function updateTaskStatusAction(formData: FormData) {
 
 export async function createClientAction(formData: FormData) {
   const { activeActivity, userId, workspaceId } = await getActionContext();
-  const name = getRequiredString(formData, "name");
+  const contactId = getOptionalString(formData, "contactId");
+  const nameFromForm = getOptionalString(formData, "name");
 
-  if (!name || !activeActivity) {
+  if (!activeActivity) return;
+
+  // If the form provides a name we prefer creating from form fields (allows verification/editing).
+  if (nameFromForm) {
+    const name = nameFromForm;
+
+    const [client] = await db
+      .insert(clients)
+      .values({
+        address: getOptionalString(formData, "address"),
+        company: getOptionalString(formData, "company"),
+        createdBy: userId,
+        email: getOptionalString(formData, "email"),
+        name,
+        notes: getOptionalString(formData, "notes"),
+        phone: getOptionalString(formData, "phone"),
+        source: getOptionalString(formData, "source"),
+        status: pickEnum(
+          clientStatuses,
+          getRequiredString(formData, "status"),
+          "prospect"
+        ),
+        website: getOptionalString(formData, "website"),
+        workspaceId,
+      })
+      .returning({ id: clients.id });
+
+    if (client?.id) {
+      await safeInsertActivityClient({
+        activityId: activeActivity.id,
+        clientId: client.id,
+        createdBy: userId,
+        workspaceId,
+      });
+    }
+
+    revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
+
     return;
   }
+
+  // If a contactId is provided, fetch the contact and promote it
+  if (contactId) {
+    const [contact] = await db
+      .select()
+      .from(contacts)
+      .where(eq(contacts.id, contactId))
+      .limit(1);
+
+    if (!contact || contact.workspaceId !== workspaceId) {
+      return;
+    }
+
+    // Resolve company name if the contact links to a company
+    let companyName: string | null = null;
+    if (contact.companyId) {
+      const [company] = await db
+        .select({ name: companies.name })
+        .from(companies)
+        .where(eq(companies.id, contact.companyId))
+        .limit(1);
+
+      companyName = company?.name ?? null;
+    }
+
+    const [client] = await db
+      .insert(clients)
+      .values({
+        address: contact.address ?? null,
+        company: companyName ?? contact.company ?? null,
+        createdBy: userId,
+        email: contact.email ?? null,
+        name: contact.fullName,
+        notes: contact.notes ?? null,
+        phone: contact.phone ?? null,
+        source: contact.source ?? null,
+        status: contact.status ?? "prospect",
+        website: contact.website ?? null,
+        workspaceId,
+      })
+      .returning({ id: clients.id });
+
+    if (client?.id) {
+      await safeInsertActivityClient({
+        activityId: activeActivity.id,
+        clientId: client.id,
+        createdBy: userId,
+        workspaceId,
+      });
+    }
+
+    revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
+
+    return;
+  }
+
+  // Fallback: create client from form fields
+  const name = getRequiredString(formData, "name");
+  if (!name) return;
 
   const [client] = await db
     .insert(clients)
@@ -917,6 +1014,190 @@ export async function createContactAction(formData: FormData) {
     "/dashboard/contacts",
     resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
   );
+}
+
+export async function updateClientAction(formData: FormData) {
+  const { userId, workspaceId } = await getActionContext();
+  const clientId = getRequiredString(formData, "clientId");
+
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(and(eq(clients.id, clientId), eq(clients.workspaceId, workspaceId)))
+    .limit(1);
+
+  if (!client) {
+    return;
+  }
+
+  await db
+    .update(clients)
+    .set({
+      name: getRequiredString(formData, "name"),
+      company: getOptionalString(formData, "company"),
+      email: getOptionalString(formData, "email"),
+      phone: getOptionalString(formData, "phone"),
+      address: getOptionalString(formData, "address"),
+      website: getOptionalString(formData, "website"),
+      source: getOptionalString(formData, "source"),
+      notes: getOptionalString(formData, "notes"),
+      status: pickEnum(
+        clientStatuses,
+        getRequiredString(formData, "status"),
+        "prospect"
+      ),
+      updatedAt: new Date(),
+    })
+    .where(eq(clients.id, clientId));
+
+  revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
+}
+
+export async function deleteClientAction(formData: FormData) {
+  const { workspaceId } = await getActionContext();
+  const clientId = getRequiredString(formData, "clientId");
+
+  await db
+    .delete(clients)
+    .where(and(eq(clients.id, clientId), eq(clients.workspaceId, workspaceId)));
+
+  revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
+}
+
+export async function updateCompanyAction(formData: FormData) {
+  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
+    await getActionContext();
+  const companyId = getRequiredString(formData, "companyId");
+  const activityId = getOptionalString(formData, "activityId");
+  const resolvedActivityId = activityId
+    ? getResolvedActivityId(
+        new Set(workspaceActivities.map((activity) => activity.id)),
+        activityId,
+        activeActivity?.id
+      )
+    : null;
+
+  const [company] = await db
+    .select()
+    .from(companies)
+    .where(and(eq(companies.id, companyId), eq(companies.workspaceId, workspaceId)))
+    .limit(1);
+
+  if (!company) {
+    return;
+  }
+
+  await db
+    .update(companies)
+    .set({
+      name: getRequiredString(formData, "name"),
+      status: pickEnum(
+        clientStatuses,
+        getRequiredString(formData, "status"),
+        "prospect"
+      ),
+      activityId: resolvedActivityId,
+      address: getOptionalString(formData, "address"),
+      city: getOptionalString(formData, "city"),
+      country: getOptionalString(formData, "country"),
+      industry: getOptionalString(formData, "industry"),
+      email: getOptionalString(formData, "email"),
+      phone: getOptionalString(formData, "phone"),
+      website: getOptionalString(formData, "website"),
+      source: getOptionalString(formData, "source"),
+      notes: getOptionalString(formData, "notes"),
+      updatedAt: new Date(),
+    })
+    .where(eq(companies.id, companyId));
+
+  revalidateDashboardPaths(
+    "/dashboard/companies",
+    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
+  );
+}
+
+export async function deleteCompanyAction(formData: FormData) {
+  const { workspaceId } = await getActionContext();
+  const companyId = getRequiredString(formData, "companyId");
+
+  await db
+    .delete(companies)
+    .where(and(eq(companies.id, companyId), eq(companies.workspaceId, workspaceId)));
+
+  revalidateDashboardPaths("/dashboard/companies");
+}
+
+export async function updateContactAction(formData: FormData) {
+  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
+    await getActionContext();
+  const contactId = getRequiredString(formData, "contactId");
+  const activityId = getOptionalString(formData, "activityId");
+  const companyId = getOptionalString(formData, "companyId");
+  const resolvedActivityId = activityId
+    ? getResolvedActivityId(
+        new Set(workspaceActivities.map((activity) => activity.id)),
+        activityId,
+        activeActivity?.id
+      )
+    : null;
+  const company = await getCompanyScope(workspaceId, companyId);
+
+  const [contact] = await db
+    .select()
+    .from(contacts)
+    .where(and(eq(contacts.id, contactId), eq(contacts.workspaceId, workspaceId)))
+    .limit(1);
+
+  if (!contact) {
+    return;
+  }
+
+  const firstName = getOptionalString(formData, "firstName");
+  const lastName = getOptionalString(formData, "lastName");
+  const fullName =
+    getOptionalString(formData, "fullName") ||
+    [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  await db
+    .update(contacts)
+    .set({
+      firstName,
+      lastName,
+      fullName,
+      activityId: resolvedActivityId,
+      companyId: company?.name ? companyId : null,
+      jobTitle: getOptionalString(formData, "jobTitle"),
+      department: getOptionalString(formData, "department"),
+      email: getOptionalString(formData, "email"),
+      phone: getOptionalString(formData, "phone"),
+      whatsapp: getOptionalString(formData, "whatsapp"),
+      linkedinUrl: getOptionalString(formData, "linkedinUrl"),
+      source: getOptionalString(formData, "source"),
+      notes: getOptionalString(formData, "notes"),
+      status: pickEnum(
+        clientStatuses,
+        getRequiredString(formData, "status"),
+        "prospect"
+      ),
+      updatedAt: new Date(),
+    })
+    .where(eq(contacts.id, contactId));
+
+  revalidateDashboardPaths(
+    "/dashboard/contacts",
+    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
+  );
+}
+
+export async function deleteContactAction(formData: FormData) {
+  const { workspaceId } = await getActionContext();
+  const contactId = getRequiredString(formData, "contactId");
+
+  await db
+    .delete(contacts)
+    .where(and(eq(contacts.id, contactId), eq(contacts.workspaceId, workspaceId)));
+
+  revalidateDashboardPaths("/dashboard/contacts");
 }
 
 export async function createBudgetAction(formData: FormData) {

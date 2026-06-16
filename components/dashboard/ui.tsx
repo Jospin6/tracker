@@ -48,6 +48,9 @@ export const primaryButtonClassName =
 export const secondaryButtonClassName =
   "app-button-secondary hover:border-white/20 hover:bg-white/8";
 
+export const iconButtonClassName =
+  "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-200 transition hover:bg-white/10 hover:text-white";
+
 export const subtleButtonClassName =
   "app-button-subtle hover:bg-white/6 hover:text-white";
 

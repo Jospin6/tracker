@@ -1,9 +1,12 @@
-import { Link2, Plus, UsersRound } from "lucide-react";
+import { Eye, Link2, Plus, Trash2, UsersRound, Pencil } from "lucide-react";
 
 import {
   assignClientRelationshipsAction,
   createClientAction,
+  deleteClientAction,
+  updateClientAction,
 } from "@/app/actions";
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { ResponsiveFormDialog } from "@/components/dashboard/responsive-form-dialog";
 import {
   EmptyState,
@@ -15,65 +18,17 @@ import {
   formControlClassName,
   formSelectClassName,
   formTextareaClassName,
+  iconButtonClassName,
   primaryButtonClassName,
   secondaryButtonClassName,
 } from "@/components/dashboard/ui";
 import { SubmitButton } from "@/components/shared/submit-button";
+import ClientEditForm from "@/components/dashboard/client-edit-form";
+import ClientForm from "@/components/dashboard/client-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getClientsPageData } from "@/lib/data/dashboard";
 
-function ClientForm() {
-  return (
-    <form action={createClientAction} className="space-y-4">
-      <FormField label="Nom">
-        <input name="name" required placeholder="Nom du client" className={formControlClassName} />
-      </FormField>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Societe">
-          <input name="company" placeholder="Societe" className={formControlClassName} />
-        </FormField>
-
-        <FormField label="Statut">
-          <select name="status" defaultValue="prospect" className={formSelectClassName}>
-            <option value="prospect">Prospect</option>
-            <option value="contacted">Contacted</option>
-            <option value="negotiating">Negotiating</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="lost">Lost</option>
-          </select>
-        </FormField>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Email">
-          <input name="email" type="email" placeholder="contact@client.com" className={formControlClassName} />
-        </FormField>
-
-        <FormField label="Telephone">
-          <input name="phone" placeholder="+33..." className={formControlClassName} />
-        </FormField>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Site web">
-          <input name="website" placeholder="https://..." className={formControlClassName} />
-        </FormField>
-
-        <FormField label="Source">
-          <input name="source" placeholder="Inbound, referral..." className={formControlClassName} />
-        </FormField>
-      </div>
-
-      <FormField label="Notes">
-        <textarea name="notes" rows={4} placeholder="Notes" className={formTextareaClassName} />
-      </FormField>
-
-      <SubmitButton idleLabel="Creer le client" className={`w-full ${primaryButtonClassName}`} />
-    </form>
-  );
-}
 
 function ClientLinkForm({
   activities,
@@ -130,7 +85,7 @@ function ClientLinkForm({
 }
 
 export default async function ClientsPage() {
-  const { activities, clients, projects } = await getClientsPageData();
+  const { activities, clients, projects, contacts, contactsList } = await getClientsPageData();
 
   return (
     <div className="space-y-8">
@@ -143,13 +98,13 @@ export default async function ClientsPage() {
           triggerLabel="Nouveau client"
           triggerClassName={primaryButtonClassName}
           mobileContent={
-            <Panel>
+              <Panel>
               <SectionTitle icon={Plus} title="Nouveau client" description="Fiche contact." />
-              <ClientForm />
+              <ClientForm contacts={contacts} contactsList={contactsList} action={createClientAction} />
             </Panel>
           }
         >
-          <ClientForm />
+          <ClientForm contacts={contacts} contactsList={contactsList} action={createClientAction} />
         </ResponsiveFormDialog>
 
         <ResponsiveFormDialog
@@ -177,52 +132,145 @@ export default async function ClientsPage() {
         <TabsContent value="directory">
           <Panel>
             <SectionTitle icon={UsersRound} title="Clients" description="Contacts." />
-            <div className="grid gap-3 md:grid-cols-2">
-              {clients.length ? (
-                clients.map((client) => (
-                  <article key={client.id} className="rounded-xl bg-black p-5 ring-1 ring-white/8">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">{client.name}</h3>
-                        <p className="mt-2 text-sm text-zinc-500">
-                          {client.company || "Sans societe"}
-                        </p>
-                      </div>
-                      <StatusBadge value={client.status} />
-                    </div>
+            {clients.length ? (
+              <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
+                <table className="min-w-full border-collapse text-left">
+                  <thead className="border-b border-white/10 bg-white/5">
+                    <tr>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Nom</th>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Société</th>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Statut</th>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Email</th>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Téléphone</th>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Site web</th>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {clients.map((client) => (
+                      <tr key={client.id} className="hover:bg-white/5">
+                        <td className="px-4 py-4 align-top">
+                          <div className="text-sm font-semibold text-white">{client.name}</div>
+                          <div className="text-xs text-zinc-500">{client.notes || ""}</div>
+                        </td>
+                        <td className="px-4 py-4 align-top text-sm text-zinc-200">{client.company || "Sans societe"}</td>
+                        <td className="px-4 py-4 align-top">
+                          <StatusBadge value={client.status} />
+                        </td>
+                        <td className="px-4 py-4 align-top text-sm text-zinc-200">{client.email || "-"}</td>
+                        <td className="px-4 py-4 align-top text-sm text-zinc-200">{client.phone || "-"}</td>
+                        <td className="px-4 py-4 align-top text-sm text-zinc-200">{client.website || "-"}</td>
+                        <td className="px-4 py-4 align-top">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Drawer direction="right">
+                              <DrawerTrigger asChild>
+                                <button type="button" className={iconButtonClassName} aria-label="Voir">
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              </DrawerTrigger>
+                              <DrawerContent className="max-w-md overflow-y-auto p-4 overflow-x-hidden">
+                                <DrawerHeader>
+                                  <DrawerTitle>Détails du client</DrawerTitle>
+                                  <DrawerDescription>Informations du client sélectionné.</DrawerDescription>
+                                </DrawerHeader>
+                                <div className="space-y-3 text-sm text-zinc-200">
+                                  <div>
+                                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Nom</p>
+                                    <p className="mt-1 text-white">{client.name}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Société</p>
+                                    <p className="mt-1">{client.company || "Sans société"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Statut</p>
+                                    <p className="mt-1">{client.status}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Email</p>
+                                    <p className="mt-1">{client.email || "-"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Téléphone</p>
+                                    <p className="mt-1">{client.phone || "-"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Site web</p>
+                                    <p className="mt-1">{client.website || "-"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Notes</p>
+                                    <p className="mt-1 text-zinc-400">{client.notes || "Aucune note"}</p>
+                                  </div>
+                                </div>
+                                <DrawerClose asChild>
+                                  <button type="button" className="mt-6 app-button-secondary w-full">
+                                    Fermer
+                                  </button>
+                                </DrawerClose>
+                              </DrawerContent>
+                            </Drawer>
 
-                    <div className="mt-4 space-y-2 text-sm text-zinc-300">
-                      <p>{client.email || "Pas d'email"}</p>
-                      <p>{client.phone || "Pas de telephone"}</p>
-                      <p>{client.website || "Pas de site"}</p>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <EmptyState title="Aucun client" description="Cree un premier client." />
-              )}
-            </div>
+                            <Drawer direction="right">
+                              <DrawerTrigger asChild>
+                                <button type="button" className={iconButtonClassName} aria-label="Éditer">
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                              </DrawerTrigger>
+                              <DrawerContent className="max-w-md overflow-y-auto p-4 overflow-x-hidden">
+                                <DrawerHeader>
+                                  <DrawerTitle>Modifier le client</DrawerTitle>
+                                </DrawerHeader>
+                                <ClientEditForm action={updateClientAction} client={client} />
+                              </DrawerContent>
+                            </Drawer>
+
+                            <form action={deleteClientAction} className="m-0">
+                              <input type="hidden" name="clientId" value={client.id} />
+                              <button type="submit" className={iconButtonClassName} aria-label="Supprimer">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <EmptyState title="Aucun client" description="Cree un premier client." />
+            )}
           </Panel>
         </TabsContent>
 
         <TabsContent value="links">
           <Panel>
             <SectionTitle icon={Link2} title="Rattachements" description="Activites et projets." />
-            <div className="grid gap-3 md:grid-cols-2">
-              {clients.length ? (
-                clients.map((client) => (
-                  <article key={client.id} className="rounded-xl bg-black p-5 ring-1 ring-white/8">
-                    <h3 className="text-lg font-semibold text-white">{client.name}</h3>
-                    <div className="mt-4 rounded-xl bg-black px-4 py-3 text-sm text-zinc-300 ring-1 ring-white/8">
-                      <p>Activites: {client.activityNames.join(" | ") || "-"}</p>
-                      <p className="mt-2">Projets: {client.projectNames.join(" | ") || "-"}</p>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <EmptyState title="Aucun lien" description="Aucun client a rattacher." />
-              )}
-            </div>
+            {clients.length ? (
+              <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
+                <table className="min-w-full border-collapse text-left">
+                  <thead className="border-b border-white/10 bg-white/5">
+                    <tr>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Client</th>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Activités</th>
+                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Projets</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {clients.map((client) => (
+                      <tr key={client.id} className="hover:bg-white/5">
+                        <td className="px-4 py-4 align-top text-sm text-zinc-200">{client.name}</td>
+                        <td className="px-4 py-4 align-top text-sm text-zinc-200">{client.activityNames.join(" | ") || "-"}</td>
+                        <td className="px-4 py-4 align-top text-sm text-zinc-200">{client.projectNames.join(" | ") || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <EmptyState title="Aucun lien" description="Aucun client a rattacher." />
+            )}
           </Panel>
         </TabsContent>
       </Tabs>
