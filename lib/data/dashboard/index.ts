@@ -3,6 +3,8 @@ export {
   getActivityDetailPageData,
   getBudgetPageData,
   getClientsPageData,
+  getCompaniesPageData,
+  getContactsPageData,
   getDashboardData,
   getFinancesPageData,
   getGoalsPageData,

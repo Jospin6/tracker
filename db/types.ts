@@ -5,6 +5,8 @@ import {
   attachments,
   budgets,
   clients,
+  companies,
+  contacts,
   goals,
   invoiceItems,
   invoices,
@@ -32,6 +34,8 @@ export type ProjectClient = InferModel<typeof projectClients>;
 export type Goal = InferModel<typeof goals>;
 export type Task = InferModel<typeof tasks>;
 export type Client = InferModel<typeof clients>;
+export type Company = InferModel<typeof companies>;
+export type Contact = InferModel<typeof contacts>;
 export type Transaction = InferModel<typeof transactions>;
 export type Budget = InferModel<typeof budgets>;
 export type Invoice = InferModel<typeof invoices>;

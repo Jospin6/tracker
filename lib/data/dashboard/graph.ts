@@ -8,6 +8,8 @@ import {
   activityClients,
   budgets,
   clients,
+  companies,
+  contacts,
   goals,
   invoices,
   projects,
@@ -89,6 +91,38 @@ async function loadOptionalProjectClients(workspaceId: string) {
   }
 }
 
+async function loadOptionalCompanies(workspaceId: string) {
+  try {
+    return await db
+      .select()
+      .from(companies)
+      .where(eq(companies.workspaceId, workspaceId))
+      .orderBy(desc(companies.updatedAt));
+  } catch (error) {
+    if (hasMissingTableError(error, "companies")) {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+async function loadOptionalContacts(workspaceId: string) {
+  try {
+    return await db
+      .select()
+      .from(contacts)
+      .where(eq(contacts.workspaceId, workspaceId))
+      .orderBy(desc(contacts.updatedAt));
+  } catch (error) {
+    if (hasMissingTableError(error, "contacts")) {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
 export async function getWorkspaceGraph() {
   const workspaceId = await getWorkspaceId();
 
@@ -97,6 +131,8 @@ export async function getWorkspaceGraph() {
     activityClientRows,
     budgetRows,
     clientRows,
+    companyRows,
+    contactRows,
     goalRows,
     invoiceRows,
     socialChannelRows,
@@ -124,6 +160,8 @@ export async function getWorkspaceGraph() {
       .from(clients)
       .where(eq(clients.workspaceId, workspaceId))
       .orderBy(desc(clients.updatedAt)),
+    loadOptionalCompanies(workspaceId),
+    loadOptionalContacts(workspaceId),
     db
       .select()
       .from(goals)
@@ -165,6 +203,8 @@ export async function getWorkspaceGraph() {
     activityClients: activityClientRows,
     budgets: budgetRows,
     clients: clientRows,
+    companies: companyRows,
+    contacts: contactRows,
     goals: goalRows,
     invoices: invoiceRows,
     socialChannels: socialChannelRows,
@@ -185,6 +225,8 @@ export function createMaps(graph: DashboardWorkspaceGraph) {
   return {
     activityMap: new Map(graph.activities.map((row) => [row.id, row])),
     clientMap: new Map(graph.clients.map((row) => [row.id, row])),
+    companyMap: new Map(graph.companies.map((row) => [row.id, row])),
+    contactMap: new Map(graph.contacts.map((row) => [row.id, row])),
     goalMap: new Map(graph.goals.map((row) => [row.id, row])),
     socialChannelMap: new Map(graph.socialChannels.map((row) => [row.id, row])),
     socialPostDetailMap: new Map(graph.socialPostDetails.map((row) => [row.postId, row])),
@@ -203,12 +245,8 @@ export function scopeWorkspaceGraphToActivity(
       activityClients: [],
       budgets: [],
       clients: [],
-      goals: [],
-      invoices: [],
-      posts: [],
-      projectClients: [],
-      projects: [],
-      socialPostDeliveries: [],
+    companies: [],
+    contacts: [],
       socialPostDetails: [],
       tasks: [],
       transactions: [],
@@ -239,6 +277,14 @@ export function scopeWorkspaceGraphToActivity(
         (budget.projectId ? projectIds.has(budget.projectId) : false)
     ),
     clients: graph.clients.filter((client) => clientIds.has(client.id)),
+    companies: graph.companies.filter(
+      (company) =>
+        company.activityId === activityId ||
+        false
+    ),
+    contacts: graph.contacts.filter(
+      (contact) => contact.activityId === activityId
+    ),
     goals: graph.goals.filter(
       (goal) =>
         goal.activityId === activityId ||

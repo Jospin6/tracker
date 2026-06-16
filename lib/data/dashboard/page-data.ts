@@ -273,6 +273,44 @@ export async function getClientsPageData() {
   };
 }
 
+export async function getCompaniesPageData() {
+  const { scopedGraph } = await getScopedWorkspaceData();
+  const activityOptions = buildOptions(scopedGraph.activities);
+  const companyContacts = new Map<string, number>();
+
+  for (const contact of scopedGraph.contacts) {
+    if (contact.companyId) {
+      companyContacts.set(contact.companyId, (companyContacts.get(contact.companyId) ?? 0) + 1);
+    }
+  }
+
+  return {
+    activities: activityOptions,
+    companies: sortByUpdatedDesc(scopedGraph.companies).map((company) => ({
+      ...company,
+      contactCount: companyContacts.get(company.id) ?? 0,
+    })),
+    contacts: buildOptions(
+      scopedGraph.contacts.map((contact) => ({ id: contact.id, name: contact.fullName }))
+    ),
+  };
+}
+
+export async function getContactsPageData() {
+  const { scopedGraph } = await getScopedWorkspaceData();
+  const activityOptions = buildOptions(scopedGraph.activities);
+  const companyMap = createMaps(scopedGraph).companyMap;
+
+  return {
+    activities: activityOptions,
+    companies: buildOptions(scopedGraph.companies),
+    contacts: sortByUpdatedDesc(scopedGraph.contacts).map((contact) => ({
+      ...contact,
+      companyName: contact.companyId ? companyMap.get(contact.companyId)?.name ?? null : null,
+    })),
+  };
+}
+
 function normalizeBudgetKey(value: string | null | undefined) {
   return value?.trim().toLowerCase().replace(/\s+/g, " ") ?? "";
 }

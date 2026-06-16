@@ -10,6 +10,8 @@ import {
   activityClients,
   budgets,
   clients,
+  companies,
+  contacts,
   goals,
   invoiceItems,
   invoices,
@@ -130,6 +132,8 @@ const dashboardPaths = [
   "/dashboard/activities",
   "/dashboard/budget",
   "/dashboard/clients",
+  "/dashboard/companies",
+  "/dashboard/contacts",
   "/dashboard/goals",
   "/dashboard/invoices",
   "/dashboard/projects",
@@ -188,6 +192,23 @@ async function getProjectScope(workspaceId: string, projectId: string | null) {
     .limit(1);
 
   return project ?? null;
+}
+
+async function getCompanyScope(workspaceId: string, companyId: string | null) {
+  if (!companyId) {
+    return null;
+  }
+
+  const [company] = await db
+    .select({
+      activityId: companies.activityId,
+      name: companies.name,
+    })
+    .from(companies)
+    .where(and(eq(companies.id, companyId), eq(companies.workspaceId, workspaceId)))
+    .limit(1);
+
+  return company ?? null;
 }
 
 function getResolvedActivityId(
@@ -803,6 +824,99 @@ export async function createClientAction(formData: FormData) {
   }
 
   revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
+}
+
+export async function createCompanyAction(formData: FormData) {
+  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
+    await getActionContext();
+  const name = getRequiredString(formData, "name");
+  const activityId = getOptionalString(formData, "activityId");
+  const resolvedActivityId = getResolvedActivityId(
+    new Set(workspaceActivities.map((activity) => activity.id)),
+    activityId,
+    activeActivity?.id
+  );
+
+  if (!name) {
+    return;
+  }
+
+  await db.insert(companies).values({
+    activityId: resolvedActivityId,
+    createdBy: userId,
+    email: getOptionalString(formData, "email"),
+    address: getOptionalString(formData, "address"),
+    city: getOptionalString(formData, "city"),
+    country: getOptionalString(formData, "country"),
+    industry: getOptionalString(formData, "industry"),
+    legalName: getOptionalString(formData, "legalName"),
+    name,
+    notes: getOptionalString(formData, "notes"),
+    phone: getOptionalString(formData, "phone"),
+    source: getOptionalString(formData, "source"),
+    status: pickEnum(
+      clientStatuses,
+      getRequiredString(formData, "status"),
+      "prospect"
+    ),
+    website: getOptionalString(formData, "website"),
+    workspaceId,
+  });
+
+  revalidateDashboardPaths(
+    "/dashboard/companies",
+    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
+  );
+}
+
+export async function createContactAction(formData: FormData) {
+  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
+    await getActionContext();
+  const firstName = getOptionalString(formData, "firstName");
+  const lastName = getOptionalString(formData, "lastName");
+  const fullName =
+    getOptionalString(formData, "fullName") ||
+    [firstName, lastName].filter(Boolean).join(" ").trim();
+  const activityId = getOptionalString(formData, "activityId");
+  const companyId = getOptionalString(formData, "companyId");
+  const company = await getCompanyScope(workspaceId, companyId);
+  const resolvedActivityId = getResolvedActivityId(
+    new Set(workspaceActivities.map((activity) => activity.id)),
+    activityId,
+    activeActivity?.id
+  );
+
+  if (!fullName) {
+    return;
+  }
+
+  await db.insert(contacts).values({
+    activityId: resolvedActivityId,
+    companyId: company?.name ? companyId : null,
+    createdBy: userId,
+    department: getOptionalString(formData, "department"),
+    email: getOptionalString(formData, "email"),
+    firstName,
+    jobTitle: getOptionalString(formData, "jobTitle"),
+    lastName,
+    linkedinUrl: getOptionalString(formData, "linkedinUrl"),
+    notes: getOptionalString(formData, "notes"),
+    phone: getOptionalString(formData, "phone"),
+    source: getOptionalString(formData, "source"),
+    status: pickEnum(
+      clientStatuses,
+      getRequiredString(formData, "status"),
+      "prospect"
+    ),
+    whatsapp: getOptionalString(formData, "whatsapp"),
+    fullName,
+    workspaceId,
+  });
+
+  revalidateDashboardPaths(
+    "/dashboard/contacts",
+    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
+  );
 }
 
 export async function createBudgetAction(formData: FormData) {
