@@ -89,7 +89,6 @@ export default async function ClientsPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro eyebrow="Clients" title="Base client" description="Repertoire et liaisons." />
 
       <div className="flex flex-wrap gap-3">
         <ResponsiveFormDialog

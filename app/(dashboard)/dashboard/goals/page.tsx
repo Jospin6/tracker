@@ -19,11 +19,6 @@ export default async function GoalsPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro
-        eyebrow="Objectifs"
-        title="Mesure et progression"
-        description="Definis des cibles concretes et mets a jour l'avancee depuis la meme page."
-      />
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.25fr]">
         <Panel>

@@ -18,11 +18,6 @@ export default async function TasksPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro
-        eyebrow="Taches"
-        title="Execution quotidienne"
-        description="Suis tes taches ouvertes, leurs priorites et leurs liens avec tes projets et objectifs."
-      />
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.25fr]">
         <Panel>

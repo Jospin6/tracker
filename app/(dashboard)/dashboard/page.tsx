@@ -29,11 +29,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro
+      {/* <PageIntro
         eyebrow="Dashboard"
         title="Vue portefeuille"
         description="Toutes les activites et leurs projets."
-      />
+      /> */}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard

@@ -24,7 +24,6 @@ export default async function SettingsPage() {
   console.log("workspaces", workspaces);
   return (
     <div className="space-y-8">
-      <PageIntro eyebrow="Parametres" title="Profil" description="Compte et workspace." />
 
       <Tabs defaultValue="profile">
         <TabsList className="max-w-2xl">

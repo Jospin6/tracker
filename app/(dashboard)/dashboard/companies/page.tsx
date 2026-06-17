@@ -110,11 +110,6 @@ export default async function CompaniesPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro
-        eyebrow="Entreprises"
-        title="Gestion des entreprises"
-        description="Suivez les entreprises, leurs activités et leurs contacts associés."
-      />
 
       <div className="flex flex-wrap gap-3">
         <ResponsiveFormDialog

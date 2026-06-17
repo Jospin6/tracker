@@ -184,11 +184,6 @@ export default async function ActivityDetailPage({
 
   return (
     <div className="space-y-8">
-      <PageIntro
-        eyebrow="Activite"
-        title={activity.name}
-        description={activity.description || activity.category || "Portefeuille de projets."}
-      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard

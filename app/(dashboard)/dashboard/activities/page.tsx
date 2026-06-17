@@ -81,8 +81,6 @@ export default async function ActivitiesPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro eyebrow="Activites" title="Structure de travail" description="Couche racine." />
-
       <section className="grid gap-4 md:grid-cols-3">
         <MetricCard
           icon={<BriefcaseBusiness className="h-4 w-4" />}

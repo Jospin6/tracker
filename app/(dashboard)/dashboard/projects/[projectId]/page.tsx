@@ -408,11 +408,6 @@ export default async function ProjectDetailPage({
 
   return (
     <div className="space-y-8">
-      <PageIntro
-        eyebrow="Projet"
-        title={project.name}
-        description={project.description || project.activityName || "Execution du projet."}
-      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard

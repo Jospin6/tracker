@@ -134,11 +134,6 @@ export default async function ContactsPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro
-        eyebrow="Contacts"
-        title="Gestion des contacts"
-        description="Suivez les personnes attachées à vos entreprises ou activités."
-      />
 
       <div className="flex flex-wrap gap-3">
         <ResponsiveFormDialog

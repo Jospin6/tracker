@@ -28,11 +28,6 @@ export default async function ProjectsPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro
-        eyebrow="Projets"
-        title="Portefeuille projet"
-        description="Chaque projet doit exister dans une activite, avec ses clients, ses taches et son argent."
-      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard

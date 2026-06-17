@@ -251,11 +251,6 @@ export default async function BudgetPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro
-        eyebrow="Budget"
-        title="Pilotage budgetaire"
-        description="Gains, depenses, enveloppes et evolution du budget."
-      />
 
       <div className="flex flex-wrap gap-3">
         <ResponsiveFormDialog

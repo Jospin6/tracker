@@ -20,11 +20,6 @@ export default async function InvoicesPage() {
 
   return (
     <div className="space-y-8">
-      <PageIntro
-        eyebrow="Factures"
-        title="Emission et encaissement"
-        description="Chaque facture doit etre rattachee a un projet pour garder une lecture claire des marges."
-      />
 
       <section className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
         <Panel>
