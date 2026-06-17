@@ -22,6 +22,8 @@ import {
   socialPosts,
   tasks,
   transactions,
+  workspaces as workspacesTable,
+  workspaceMembers,
 } from "@/db/schema";
 import {
   clearAuthCookies,
@@ -31,6 +33,7 @@ import {
   setWorkspaceCookie,
 } from "@/lib/auth/cookies";
 import { getWorkspaceContext } from "@/lib/auth/server";
+import { slugify } from "@/lib/utils/strings";
 import { generateSocialDraft } from "@/lib/social/ai";
 import { publishDueSocialDeliveries } from "@/lib/social/publishing";
 import {
@@ -181,7 +184,6 @@ async function getProjectScope(workspaceId: string, projectId: string | null) {
   if (!projectId) {
     return null;
   }
-
   const [project] = await db
     .select({
       activityId: projects.activityId,
@@ -362,9 +364,9 @@ export async function logoutAction() {
 }
 
 export async function switchWorkspaceAction(formData: FormData) {
-  const { workspaces } = await getWorkspaceContext();
+  const { workspaces: workspaceList } = await getWorkspaceContext();
   const workspaceId = getRequiredString(formData, "workspaceId");
-  const selectedWorkspace = workspaces.find((workspace) => workspace.id === workspaceId);
+  const selectedWorkspace = workspaceList.find((workspace) => workspace.id === workspaceId);
 
   if (!selectedWorkspace) {
     return;
@@ -374,6 +376,100 @@ export async function switchWorkspaceAction(formData: FormData) {
   setWorkspaceCookie(cookieStore, selectedWorkspace.id);
   clearActivityCookie(cookieStore);
   revalidateDashboardPaths("/dashboard");
+}
+
+export async function createWorkspaceAction(formData: FormData) {
+  const { user } = await getWorkspaceContext();
+  const name = getRequiredString(formData, "name");
+  const description = getOptionalString(formData, "description");
+  const type = pickEnum(
+    ["personal", "team", "company", "agency"] as const,
+    getRequiredString(formData, "type"),
+    "personal"
+  );
+
+  if (!name) {
+    return;
+  }
+
+  const [workspace] = await db
+    .insert(workspacesTable)
+    .values({
+      description: description || null,
+      name,
+      ownerId: user.id,
+      slug: `${slugify(name) || "workspace"}-${Date.now()}`,
+      type,
+    })
+    .returning({ id: workspacesTable.id });
+
+  if (workspace?.id) {
+    await db.insert(workspaceMembers).values({
+      role: "owner",
+      status: "active",
+      userId: user.id,
+      workspaceId: workspace.id,
+    });
+
+    const cookieStore = await cookies();
+    setWorkspaceCookie(cookieStore, workspace.id);
+    clearActivityCookie(cookieStore);
+  }
+
+  revalidateDashboardPaths("/dashboard", "/dashboard/settings");
+}
+
+export async function updateWorkspaceAction(formData: FormData) {
+  const { workspaces: workspaceList } = await getWorkspaceContext();
+  const workspaceId = getRequiredString(formData, "workspaceId");
+  const selectedWorkspace = workspaceList.find((workspace) => workspace.id === workspaceId);
+
+  if (!selectedWorkspace) {
+    return;
+  }
+
+  const name = getRequiredString(formData, "name");
+  const description = getOptionalString(formData, "description");
+  const type = pickEnum(
+    ["personal", "team", "company", "agency"] as const,
+    getRequiredString(formData, "type"),
+    selectedWorkspace.type
+  );
+
+  if (!name) {
+    return;
+  }
+
+  await db
+    .update(workspacesTable)
+    .set({
+      description: description || null,
+      name,
+      type,
+    })
+    .where(eq(workspacesTable.id, workspaceId));
+
+  revalidateDashboardPaths("/dashboard/settings");
+}
+
+export async function deleteWorkspaceAction(formData: FormData) {
+  const { activeWorkspace, workspaces: workspaceList } = await getWorkspaceContext();
+  const workspaceId = getRequiredString(formData, "workspaceId");
+  const selectedWorkspace = workspaceList.find((workspace) => workspace.id === workspaceId);
+
+  if (!selectedWorkspace) {
+    return;
+  }
+
+  await db.delete(workspacesTable).where(eq(workspacesTable.id, workspaceId));
+
+  if (activeWorkspace.id === workspaceId) {
+    const cookieStore = await cookies();
+    clearWorkspaceCookie(cookieStore);
+    clearActivityCookie(cookieStore);
+  }
+
+  revalidateDashboardPaths("/dashboard", "/dashboard/settings");
 }
 
 export async function switchActivityAction(formData: FormData) {
@@ -858,8 +954,8 @@ export async function createClientAction(formData: FormData) {
     const [client] = await db
       .insert(clients)
       .values({
-        address: contact.address ?? null,
-        company: companyName ?? contact.company ?? null,
+        address: companyName ?? null,
+        company: companyName ?? null,
         createdBy: userId,
         email: contact.email ?? null,
         name: contact.fullName,
@@ -867,7 +963,7 @@ export async function createClientAction(formData: FormData) {
         phone: contact.phone ?? null,
         source: contact.source ?? null,
         status: contact.status ?? "prospect",
-        website: contact.website ?? null,
+        website: companyName ?? null,
         workspaceId,
       })
       .returning({ id: clients.id });

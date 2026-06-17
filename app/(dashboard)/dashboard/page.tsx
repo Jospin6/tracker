@@ -191,14 +191,23 @@ export default async function DashboardPage() {
               {data.attentionProjects.length ? (
                 data.attentionProjects.map((project) => (
                   <article key={project.id} className="rounded-xl bg-black px-4 py-4 ring-1 ring-white/8">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                       <div>
                         <h3 className="font-medium text-white">{project.name}</h3>
                         <p className="mt-2 text-sm text-zinc-500">
                           {project.activityName || "Sans activite"}
                         </p>
                       </div>
-                      <StatusBadge value={project.status} />
+                      <div className="flex flex-wrap items-center gap-3">
+                        <StatusBadge value={project.status} />
+                        <Link
+                          href={`/dashboard/projects/${project.id}`}
+                          className={secondaryButtonClassName}
+                        >
+                          Ouvrir
+                          <ArrowUpRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </div>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-3 text-sm text-zinc-300">
                       <span>{project.overdueTasks} retard(s)</span>

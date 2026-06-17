@@ -42,7 +42,8 @@ async function getScopedWorkspaceData() {
 }
 
 export async function getDashboardData() {
-  const { scopedGraph } = await getScopedWorkspaceData();
+  const { activeActivity, scopedGraph } = await getScopedWorkspaceData();
+  const activeActivityId = activeActivity?.id ?? null;
   const now = new Date();
   const monthStart = startOfMonth(now);
   const activitySummaries = sortByUpdatedDesc(
@@ -84,12 +85,18 @@ export async function getDashboardData() {
 
   return {
     activities: activitySummaries,
-    attentionProjects: projectSummaries
-      .filter(
-        (project) =>
-          project.overdueTasks > 0 || project.outstanding > 0 || project.status === "blocked"
-      )
-      .slice(0, 4),
+    attentionProjects:
+      activeActivityId === null
+        ? []
+        : projectSummaries
+            .filter(
+              (project) =>
+                project.activityId === activeActivityId &&
+                (project.overdueTasks > 0 ||
+                  project.outstanding > 0 ||
+                  project.status === "blocked")
+            )
+            .slice(0, 4),
     clients: scopedGraph.clients,
     goals: scopedGraph.goals.map((goal) => enrichGoal(goal, scopedGraph)),
     invoices: scopedGraph.invoices.map((invoice) => enrichInvoice(invoice, scopedGraph)),
