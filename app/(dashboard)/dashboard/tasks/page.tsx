@@ -1,194 +1,210 @@
+import { ListTodo } from "lucide-react";
+
+import { createTaskAction } from "@/app/actions";
+import { TaskKanbanBoard } from "@/components/dashboard/task-kanban-board";
 import {
-  createTaskAction,
-  updateTaskStatusAction,
-} from "@/app/actions";
-import { SubmitButton } from "@/components/shared/submit-button";
-import {
-  EmptyState,
+  FormField,
   PageIntro,
   Panel,
   SectionTitle,
-  StatusBadge,
+  formControlClassName,
+  formSelectClassName,
+  formTextareaClassName,
+  primaryButtonClassName,
 } from "@/components/dashboard/ui";
+import { SubmitButton } from "@/components/shared/submit-button";
 import { getTasksPageData } from "@/lib/data/dashboard";
-import { formatDate } from "@/lib/utils/format";
+import {
+  taskPriorityOptions,
+  taskStatusMeta,
+  taskStatusOrder,
+  type TaskStatus,
+} from "@/lib/tasks";
 
 export default async function TasksPage() {
   const { activities, goals, projects, tasks } = await getTasksPageData();
 
+  const taskCounts = taskStatusOrder.reduce((acc, status) => {
+    acc[status] = tasks.filter((task) => task.status === status).length;
+    return acc;
+  }, {} as Record<TaskStatus, number>);
+
   return (
     <div className="space-y-8">
+      <PageIntro
+        eyebrow="Execution"
+        title="Kanban des taches"
+        description="Organise le travail par statut et fais glisser les cartes entre les colonnes."
+      />
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.25fr]">
+      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel>
           <SectionTitle
             title="Nouvelle tache"
             description="Ajoute rapidement une action a executer ou a deleguer."
           />
           <form action={createTaskAction} className="space-y-4">
-            <input
-              name="title"
-              required
-              placeholder="Titre de la tache"
-              className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
-            />
-            <textarea
-              name="description"
-              rows={4}
-              placeholder="Description"
-              className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <select
-                name="projectId"
-                defaultValue=""
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
-              >
-                <option value="">Sans projet</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="goalId"
-                defaultValue=""
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
-              >
-                <option value="">Sans objectif</option>
-                {goals.map((goal) => (
-                  <option key={goal.id} value={goal.id}>
-                    {goal.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <select
-                name="activityId"
+            <FormField label="Titre">
+              <input
+                name="title"
                 required
-                defaultValue={activities[0]?.id ?? ""}
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
-              >
-                <option value="">Choisir une activite</option>
-                {activities.map((activity) => (
-                  <option key={activity.id} value={activity.id}>
-                    {activity.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                name="dueDate"
-                type="date"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
+                placeholder="Titre de la tache"
+                className={formControlClassName}
               />
+            </FormField>
+
+            <FormField label="Description">
+              <textarea
+                name="description"
+                rows={4}
+                placeholder="Description"
+                className={formTextareaClassName}
+              />
+            </FormField>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Projet">
+                <select
+                  name="projectId"
+                  defaultValue=""
+                  className={formSelectClassName}
+                >
+                  <option value="">Sans projet</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+
+              <FormField label="Objectif">
+                <select
+                  name="goalId"
+                  defaultValue=""
+                  className={formSelectClassName}
+                >
+                  <option value="">Sans objectif</option>
+                  {goals.map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
             </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Activite">
+                <select
+                  name="activityId"
+                  required
+                  defaultValue={activities[0]?.id ?? ""}
+                  className={formSelectClassName}
+                >
+                  <option value="">Choisir une activite</option>
+                  {activities.map((activity) => (
+                    <option key={activity.id} value={activity.id}>
+                      {activity.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+
+              <FormField label="Echeance">
+                <input name="dueDate" type="date" className={formControlClassName} />
+              </FormField>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-3">
-              <select
-                name="status"
-                defaultValue="todo"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
-              >
-                <option value="todo">Todo</option>
-                <option value="in_progress">In progress</option>
-                <option value="waiting">Waiting</option>
-                <option value="done">Done</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              <select
-                name="priority"
-                defaultValue="medium"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-              <input
-                name="estimatedMinutes"
-                type="number"
-                min={0}
-                step="5"
-                placeholder="Minutes"
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
-              />
+              <FormField label="Statut">
+                <select name="status" defaultValue="todo" className={formSelectClassName}>
+                  {taskStatusOrder.map((status) => (
+                    <option key={status} value={status}>
+                      {taskStatusMeta[status].label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+
+              <FormField label="Priorite">
+                <select
+                  name="priority"
+                  defaultValue="medium"
+                  className={formSelectClassName}
+                >
+                  {taskPriorityOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+
+              <FormField label="Estimation">
+                <input
+                  name="estimatedMinutes"
+                  type="number"
+                  min={0}
+                  step="5"
+                  placeholder="Minutes"
+                  className={formControlClassName}
+                />
+              </FormField>
             </div>
-            <SubmitButton
-              idleLabel="Ajouter la tache"
-              className="w-full rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-60"
-            />
+
+            <div className="flex justify-end">
+              <SubmitButton idleLabel="Ajouter la tache" className={primaryButtonClassName} />
+            </div>
           </form>
         </Panel>
 
         <Panel>
           <SectionTitle
-            title="Backlog operationnel"
-            description="Mets a jour l'etat d'une tache directement depuis sa carte."
+            icon={ListTodo}
+            title="Vue d'ensemble"
+            description="Chaque colonne represente un etat du flux de travail."
           />
-          <div className="space-y-4">
-            {tasks.length ? (
-              tasks.map((task) => (
-                <article key={task.id} className="rounded-3xl bg-slate-950/80 p-5">
-                  <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="text-lg font-semibold text-white">
-                          {task.title}
-                        </h3>
-                        <StatusBadge value={task.status} />
-                      </div>
-                      <p className="mt-2 text-sm text-slate-400">
-                        Projet: {task.projectName || "Sans projet"} | Objectif:{" "}
-                        {task.goalName || "Sans objectif"} | Activite:{" "}
-                        {task.activityName || "Sans activite"}
-                      </p>
-                    </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {taskStatusOrder.map((status) => {
+              const meta = taskStatusMeta[status];
 
-                    <form action={updateTaskStatusAction} className="flex flex-wrap items-center gap-2">
-                      <input type="hidden" name="taskId" value={task.id} />
-                      <select
-                        name="status"
-                        defaultValue={task.status}
-                        className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white outline-none focus:border-brand-500"
-                      >
-                        <option value="todo">Todo</option>
-                        <option value="in_progress">In progress</option>
-                        <option value="waiting">Waiting</option>
-                        <option value="done">Done</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
-                      <SubmitButton
-                        idleLabel="Maj"
-                        pendingLabel="..."
-                        className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-200 transition hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
-                      />
-                    </form>
-                  </div>
-
-                  <p className="mt-4 text-sm text-slate-300">
-                    {task.description || "Aucune description."}
+              return (
+                <article
+                  key={status}
+                  className="rounded-2xl border border-white/8 bg-black/60 p-4"
+                >
+                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+                    {meta.label}
                   </p>
-
-                  <div className="mt-4 flex flex-wrap gap-4 text-xs uppercase tracking-[0.18em] text-slate-500">
-                    <span>Priorite: {task.priority}</span>
-                    <span>Echeance: {formatDate(task.dueDate)}</span>
-                    <span>
-                      Estimation: {task.estimatedMinutes ? `${task.estimatedMinutes} min` : "-"}
+                  <div className="mt-3 flex items-end justify-between gap-3">
+                    <p className="text-3xl font-semibold tracking-[-0.03em] text-white">
+                      {taskCounts[status]}
+                    </p>
+                    <span className={`inline-flex rounded-full border border-white/8 px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${meta.ring}`}>
+                      {meta.label}
                     </span>
                   </div>
+                  <p className="mt-3 text-sm text-zinc-500">{meta.description}</p>
                 </article>
-              ))
-            ) : (
-              <EmptyState
-                title="Aucune tache"
-                description="Ajoute une tache pour organiser ton execution au quotidien."
-              />
-            )}
+              );
+            })}
           </div>
+          <p className="mt-4 text-sm text-zinc-500">
+            Glisse une carte vers une autre colonne pour changer son statut sans quitter la
+            page.
+          </p>
         </Panel>
       </section>
+
+      <Panel>
+        <SectionTitle
+          icon={ListTodo}
+          title="Tableau Kanban"
+          description="Prends une carte et depose-la dans la colonne qui correspond a son etat."
+        />
+        <TaskKanbanBoard tasks={tasks} />
+      </Panel>
     </div>
   );
 }

@@ -132,11 +132,11 @@ export default async function ClientsPage() {
           <Panel>
             <SectionTitle icon={UsersRound} title="Clients" description="Contacts." />
             {clients.length ? (
-              <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
-                <table className="min-w-full border-collapse text-left">
-                  <thead className="border-b border-white/10 bg-white/5">
+              <div className="app-table-shell">
+                <table className="app-table">
+                  <thead className="app-table-head">
                     <tr>
-                      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Nom</th>
+                      <th className="app-table-head-cell">Nom</th>
                       <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Société</th>
                       <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Statut</th>
                       <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Email</th>
@@ -247,9 +247,9 @@ export default async function ClientsPage() {
           <Panel>
             <SectionTitle icon={Link2} title="Rattachements" description="Activites et projets." />
             {clients.length ? (
-              <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
-                <table className="min-w-full border-collapse text-left">
-                  <thead className="border-b border-white/10 bg-white/5">
+              <div className="app-table-shell">
+                <table className="app-table">
+                  <thead className="app-table-head">
                     <tr>
                       <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Client</th>
                       <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Activités</th>

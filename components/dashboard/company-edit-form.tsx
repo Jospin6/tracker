@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   FormField,
   formControlClassName,
@@ -32,36 +32,19 @@ type CompanyEditFormProps = {
 
 export default function CompanyEditForm({ action, company, activities }: CompanyEditFormProps) {
   const [formState, setFormState] = useState({
-    name: "",
-    status: "prospect",
-    activityId: "",
-    address: "",
-    city: "",
-    country: "",
-    industry: "",
-    email: "",
-    phone: "",
-    website: "",
-    source: "",
-    notes: "",
+    name: company.name ?? "",
+    status: company.status ?? "prospect",
+    activityId: company.activityId ?? "",
+    address: company.address ?? "",
+    city: company.city ?? "",
+    country: company.country ?? "",
+    industry: company.industry ?? "",
+    email: company.email ?? "",
+    phone: company.phone ?? "",
+    website: company.website ?? "",
+    source: company.source ?? "",
+    notes: company.notes ?? "",
   });
-
-  useEffect(() => {
-    setFormState({
-      name: company.name ?? "",
-      status: company.status ?? "prospect",
-      activityId: company.activityId ?? "",
-      address: company.address ?? "",
-      city: company.city ?? "",
-      country: company.country ?? "",
-      industry: company.industry ?? "",
-      email: company.email ?? "",
-      phone: company.phone ?? "",
-      website: company.website ?? "",
-      source: company.source ?? "",
-      notes: company.notes ?? "",
-    });
-  }, [company]);
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>

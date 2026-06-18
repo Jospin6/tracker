@@ -49,7 +49,7 @@ export const secondaryButtonClassName =
   "app-button-secondary hover:border-white/20 hover:bg-white/8";
 
 export const iconButtonClassName =
-  "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-200 transition hover:bg-white/10 hover:text-white";
+  "inline-flex h-5 w-5 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent text-zinc-200 transition hover:bg-transparent hover:text-white";
 
 export const subtleButtonClassName =
   "app-button-subtle hover:bg-white/6 hover:text-white";
@@ -77,6 +77,7 @@ export function InlineActions({ children }: { children: ReactNode }) {
 export function PageIntro({
   actions,
   eyebrow,
+  description,
   title,
 }: {
   actions?: ReactNode;
@@ -93,6 +94,11 @@ export function PageIntro({
         <h1 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
           {title}
         </h1>
+        {description ? (
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400">
+            {description}
+          </p>
+        ) : null}
       </div>
       {actions ? <div>{actions}</div> : null}
     </section>
@@ -107,7 +113,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`app-panel p-5 sm:p-6 ${className}`}>
+    <section className={`app-panel ${className}`}>
       {children}
     </section>
   );
@@ -165,7 +171,7 @@ export function MetricCard({
           </p>
           {hint ? <p className="mt-3 text-sm text-zinc-500">{hint}</p> : null}
         </div>
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/12 text-brand-200 ring-1 ring-brand-500/16">
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-lg bg-brand-500/12 text-brand-200 ring-1 ring-brand-500/16">
           {iconNode}
         </span>
       </div>

@@ -1,11 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  ArrowLeft,
   BadgeDollarSign,
+  CirclePlus,
   FileText,
   ListTodo,
-  ReceiptText,
   Target,
   TrendingUp,
   UserPlus,
@@ -19,13 +17,11 @@ import {
   createTaskAction,
   createTransactionAction,
 } from "@/app/actions";
-import { ResponsiveFormDialog } from "@/components/dashboard/responsive-form-dialog";
 import {
   EmptyState,
   FormField,
   MetaStrip,
   MetricCard,
-  PageIntro,
   Panel,
   SectionTitle,
   StatusBadge,
@@ -35,6 +31,8 @@ import {
   primaryButtonClassName,
   secondaryButtonClassName,
 } from "@/components/dashboard/ui";
+import { TabActionDialog } from "@/components/dashboard/tab-actions";
+import { TaskKanbanBoard } from "@/components/dashboard/task-kanban-board";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getProjectDetailPageData } from "@/lib/data/dashboard";
@@ -399,9 +397,6 @@ export default async function ProjectDetailPage({
   }
 
   const { clients, project } = data;
-  const backHref = project.activityId
-    ? `/dashboard/activities/${project.activityId}`
-    : "/dashboard/activities";
   const financeClientOptions = project.clients.length
     ? project.clients.map((client) => ({ id: client.id, label: client.name }))
     : clients;
@@ -445,88 +440,6 @@ export default async function ProjectDetailPage({
         ]}
       />
 
-      <div className="space-y-4 md:flex md:flex-wrap md:gap-3 md:space-y-0">
-        <Link href={backHref} className={secondaryButtonClassName}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
-        </Link>
-
-        <ResponsiveFormDialog
-          title="Associer un client"
-          description="Lien direct avec le projet."
-          triggerLabel="Associer un client"
-          triggerClassName={secondaryButtonClassName}
-          mobileContent={
-            <Panel>
-              <SectionTitle icon={UserPlus} title="Associer un client" description="Lien direct avec le projet." />
-              <ProjectClientForm activityId={project.activityId} clients={clients} projectId={project.id} />
-            </Panel>
-          }
-        >
-          <ProjectClientForm activityId={project.activityId} clients={clients} projectId={project.id} />
-        </ResponsiveFormDialog>
-
-        <ResponsiveFormDialog
-          title="Nouvel objectif"
-          description="Cible du projet."
-          triggerLabel="Nouvel objectif"
-          triggerClassName={primaryButtonClassName}
-          mobileContent={
-            <Panel>
-              <SectionTitle icon={Target} title="Nouvel objectif" description="Cible du projet." />
-              <GoalForm activityId={project.activityId} projectId={project.id} />
-            </Panel>
-          }
-        >
-          <GoalForm activityId={project.activityId} projectId={project.id} />
-        </ResponsiveFormDialog>
-
-        <ResponsiveFormDialog
-          title="Nouvelle tache"
-          description="Action de realisation."
-          triggerLabel="Nouvelle tache"
-          triggerClassName={secondaryButtonClassName}
-          mobileContent={
-            <Panel>
-              <SectionTitle icon={ListTodo} title="Nouvelle tache" description="Action de realisation." />
-              <TaskForm activityId={project.activityId} goals={project.goals} projectId={project.id} />
-            </Panel>
-          }
-        >
-          <TaskForm activityId={project.activityId} goals={project.goals} projectId={project.id} />
-        </ResponsiveFormDialog>
-
-        <ResponsiveFormDialog
-          title="Nouveau flux"
-          description="Revenu ou depense du projet."
-          triggerLabel="Nouveau flux"
-          triggerClassName={secondaryButtonClassName}
-          mobileContent={
-            <Panel>
-              <SectionTitle icon={TrendingUp} title="Nouveau flux" description="Revenu ou depense du projet." />
-              <FinanceForm activityId={project.activityId} clients={financeClientOptions} projectId={project.id} />
-            </Panel>
-          }
-        >
-          <FinanceForm activityId={project.activityId} clients={financeClientOptions} projectId={project.id} />
-        </ResponsiveFormDialog>
-
-        <ResponsiveFormDialog
-          title="Nouvelle facture"
-          description="Facture rattachee au projet."
-          triggerLabel="Nouvelle facture"
-          triggerClassName={secondaryButtonClassName}
-          mobileContent={
-            <Panel>
-              <SectionTitle icon={ReceiptText} title="Nouvelle facture" description="Facture rattachee au projet." />
-              <InvoiceForm activityId={project.activityId} clients={financeClientOptions} projectId={project.id} />
-            </Panel>
-          }
-        >
-          <InvoiceForm activityId={project.activityId} clients={financeClientOptions} projectId={project.id} />
-        </ResponsiveFormDialog>
-      </div>
-
       <Tabs defaultValue="clients">
         <TabsList className="max-w-5xl">
           <TabsTrigger value="clients">Clients</TabsTrigger>
@@ -538,7 +451,24 @@ export default async function ProjectDetailPage({
 
         <TabsContent value="clients">
           <Panel>
-            <SectionTitle icon={UsersRound} title="Clients" description="Equipe client du projet." />
+            <SectionTitle
+              icon={UsersRound}
+              title="Clients"
+              trailing={
+                <TabActionDialog
+                  title="Associer un client"
+                  description="Lien direct avec le projet."
+                  triggerAriaLabel="Associer un client"
+                  triggerIcon={<UserPlus className="h-4 w-4" />}
+                >
+                  <ProjectClientForm
+                    activityId={project.activityId}
+                    clients={clients}
+                    projectId={project.id}
+                  />
+                </TabActionDialog>
+              }
+            />
             <div className="space-y-3">
               {project.clients.length ? (
                 project.clients.map((client) => (
@@ -563,7 +493,20 @@ export default async function ProjectDetailPage({
 
         <TabsContent value="goals">
           <Panel>
-            <SectionTitle icon={Target} title="Objectifs" description="Cibles du projet." />
+            <SectionTitle
+              icon={Target}
+              title="Objectifs"
+              trailing={
+                <TabActionDialog
+                  title="Nouvel objectif"
+                  description="Cible du projet."
+                  triggerAriaLabel="Nouvel objectif"
+                  triggerIcon={<CirclePlus className="h-4 w-4" />}
+                >
+                  <GoalForm activityId={project.activityId} projectId={project.id} />
+                </TabActionDialog>
+              }
+            />
             <div className="space-y-3">
               {project.goals.length ? (
                 project.goals.map((goal) => (
@@ -588,26 +531,25 @@ export default async function ProjectDetailPage({
 
         <TabsContent value="tasks">
           <Panel>
-            <SectionTitle icon={ListTodo} title="Taches" description="Execution du projet." />
-            <div className="space-y-3">
-              {project.tasks.length ? (
-                project.tasks.map((task) => (
-                  <article key={task.id} className="rounded-xl bg-black px-4 py-4 ring-1 ring-white/8">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-medium text-white">{task.title}</h3>
-                        <p className="mt-2 text-sm text-zinc-500">
-                          {task.goalName || "Sans objectif"} | {formatDate(task.dueDate)}
-                        </p>
-                      </div>
-                      <StatusBadge value={task.status} />
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <EmptyState title="Aucune tache" description="Aucune action de realisation." />
-              )}
-            </div>
+            <SectionTitle
+              icon={ListTodo}
+              title="Taches"
+              trailing={
+                <TabActionDialog
+                  title="Nouvelle tache"
+                  description="Action de realisation."
+                  triggerAriaLabel="Nouvelle tache"
+                  triggerIcon={<CirclePlus className="h-4 w-4" />}
+                >
+                  <TaskForm
+                    activityId={project.activityId}
+                    goals={project.goals}
+                    projectId={project.id}
+                  />
+                </TabActionDialog>
+              }
+            />
+            <TaskKanbanBoard tasks={project.tasks} />
           </Panel>
         </TabsContent>
 
@@ -634,7 +576,24 @@ export default async function ProjectDetailPage({
             </Panel>
 
             <Panel>
-              <SectionTitle icon={TrendingUp} title="Flux" description="Operations du projet." />
+              <SectionTitle
+                icon={TrendingUp}
+                title="Flux"
+                trailing={
+                  <TabActionDialog
+                    title="Nouveau flux"
+                    description="Revenu ou depense du projet."
+                    triggerAriaLabel="Nouveau flux"
+                    triggerIcon={<CirclePlus className="h-4 w-4" />}
+                  >
+                    <FinanceForm
+                      activityId={project.activityId}
+                      clients={financeClientOptions}
+                      projectId={project.id}
+                    />
+                  </TabActionDialog>
+                }
+              />
               <div className="space-y-3">
                 {project.transactions.length ? (
                   project.transactions.map((transaction) => (
@@ -665,7 +624,24 @@ export default async function ProjectDetailPage({
 
         <TabsContent value="invoices">
           <Panel>
-            <SectionTitle icon={FileText} title="Factures" description="Facturation et encaissements." />
+            <SectionTitle
+              icon={FileText}
+              title="Factures"
+              trailing={
+                <TabActionDialog
+                  title="Nouvelle facture"
+                  description="Facture rattachee au projet."
+                  triggerAriaLabel="Nouvelle facture"
+                  triggerIcon={<CirclePlus className="h-4 w-4" />}
+                >
+                  <InvoiceForm
+                    activityId={project.activityId}
+                    clients={financeClientOptions}
+                    projectId={project.id}
+                  />
+                </TabActionDialog>
+              }
+            />
             <div className="space-y-3">
               {project.invoices.length ? (
                 project.invoices.map((invoice) => (

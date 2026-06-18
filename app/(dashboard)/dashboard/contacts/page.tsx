@@ -155,7 +155,7 @@ export default async function ContactsPage() {
       <Panel>
         <SectionTitle icon={Briefcase} title="Contacts" description="Liste des contacts suivis." />
         {contacts.length ? (
-          <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
+          <div className="overflow-hidden border border-white/10 bg-black">
             <table className="min-w-full border-collapse text-left">
               <thead className="border-b border-white/10 bg-white/5">
                 <tr>

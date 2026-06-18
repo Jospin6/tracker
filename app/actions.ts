@@ -41,6 +41,7 @@ import {
   refreshSocialPostFromDeliveries,
   upsertSocialPostDetail,
 } from "@/lib/social/repository";
+import { taskPriorityOrder, taskStatusOrder } from "@/lib/tasks";
 import {
   normalizeHashtags,
   scoreSocialContent,
@@ -79,8 +80,6 @@ const goalTypes = [
   "administrative",
   "learning",
 ] as const;
-const taskStatuses = ["todo", "in_progress", "waiting", "done", "cancelled"] as const;
-const taskPriorities = ["low", "medium", "high", "urgent"] as const;
 const clientStatuses = [
   "prospect",
   "contacted",
@@ -801,7 +800,7 @@ export async function createTaskAction(formData: FormData) {
   }
 
   const status = pickEnum(
-    taskStatuses,
+    taskStatusOrder,
     getRequiredString(formData, "status"),
     "todo"
   );
@@ -816,7 +815,7 @@ export async function createTaskAction(formData: FormData) {
     goalId: getOptionalString(formData, "goalId"),
     plannedDate: getOptionalDate(formData, "plannedDate"),
     priority: pickEnum(
-      taskPriorities,
+      taskPriorityOrder,
       getRequiredString(formData, "priority"),
       "medium"
     ),
@@ -834,22 +833,21 @@ export async function createTaskAction(formData: FormData) {
 }
 
 export async function updateTaskStatusAction(formData: FormData) {
-  const { activeActivity, workspaceId } = await getActionContext();
+  const { workspaceId } = await getActionContext();
   const taskId = getRequiredString(formData, "taskId");
   const status = pickEnum(
-    taskStatuses,
+    taskStatusOrder,
     getRequiredString(formData, "status"),
     "todo"
   );
 
-  if (!taskId || !activeActivity) {
+  if (!taskId) {
     return;
   }
 
   const [task] = await db
     .select({
-      activityId: tasks.activityId,
-      projectId: tasks.projectId,
+      workspaceId: tasks.workspaceId,
     })
     .from(tasks)
     .where(eq(tasks.id, taskId))
@@ -859,13 +857,7 @@ export async function updateTaskStatusAction(formData: FormData) {
     return;
   }
 
-  let taskActivityId = task.activityId;
-
-  if (!taskActivityId && task.projectId) {
-    taskActivityId = (await getProjectScope(workspaceId, task.projectId))?.activityId ?? null;
-  }
-
-  if (taskActivityId !== activeActivity.id) {
+  if (task.workspaceId !== workspaceId) {
     return;
   }
 
@@ -1113,7 +1105,7 @@ export async function createContactAction(formData: FormData) {
 }
 
 export async function updateClientAction(formData: FormData) {
-  const { userId, workspaceId } = await getActionContext();
+  const { workspaceId } = await getActionContext();
   const clientId = getRequiredString(formData, "clientId");
 
   const [client] = await db
@@ -1161,7 +1153,7 @@ export async function deleteClientAction(formData: FormData) {
 }
 
 export async function updateCompanyAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
+  const { activeActivity, activities: workspaceActivities, workspaceId } =
     await getActionContext();
   const companyId = getRequiredString(formData, "companyId");
   const activityId = getOptionalString(formData, "activityId");
@@ -1224,7 +1216,7 @@ export async function deleteCompanyAction(formData: FormData) {
 }
 
 export async function updateContactAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
+  const { activeActivity, activities: workspaceActivities, workspaceId } =
     await getActionContext();
   const contactId = getRequiredString(formData, "contactId");
   const activityId = getOptionalString(formData, "activityId");

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  ArrowLeft,
   ArrowUpRight,
   BadgeDollarSign,
   BriefcaseBusiness,
@@ -16,13 +15,11 @@ import {
   assignClientRelationshipsAction,
   createProjectAction,
 } from "@/app/actions";
-import { ResponsiveFormDialog } from "@/components/dashboard/responsive-form-dialog";
 import {
   EmptyState,
   FormField,
   MetaStrip,
   MetricCard,
-  PageIntro,
   Panel,
   SectionTitle,
   StatusBadge,
@@ -32,6 +29,8 @@ import {
   primaryButtonClassName,
   secondaryButtonClassName,
 } from "@/components/dashboard/ui";
+import { TabActionDialog } from "@/components/dashboard/tab-actions";
+import { TaskKanbanBoard } from "@/components/dashboard/task-kanban-board";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getActivityDetailPageData } from "@/lib/data/dashboard";
@@ -221,43 +220,6 @@ export default async function ActivityDetailPage({
         ]}
       />
 
-      <div className="space-y-4 md:flex md:flex-wrap md:gap-3 md:space-y-0">
-        <Link href="/dashboard/activities" className={secondaryButtonClassName}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
-        </Link>
-
-        <ResponsiveFormDialog
-          title="Nouveau projet"
-          description="Le projet herite cette activite."
-          triggerLabel="Nouveau projet"
-          triggerClassName={primaryButtonClassName}
-          mobileContent={
-            <Panel>
-              <SectionTitle icon={FolderPlus} title="Nouveau projet" description="Le projet herite cette activite." />
-              <ProjectForm activityId={activity.id} clients={clients} />
-            </Panel>
-          }
-        >
-          <ProjectForm activityId={activity.id} clients={clients} />
-        </ResponsiveFormDialog>
-
-        <ResponsiveFormDialog
-          title="Associer un client"
-          description="Lien direct avec l'activite ou un projet."
-          triggerLabel="Associer un client"
-          triggerClassName={secondaryButtonClassName}
-          mobileContent={
-            <Panel>
-              <SectionTitle icon={UserPlus} title="Associer un client" description="Lien direct avec l'activite ou un projet." />
-              <ActivityClientLinkForm activityId={activity.id} clients={clients} projects={projects} />
-            </Panel>
-          }
-        >
-          <ActivityClientLinkForm activityId={activity.id} clients={clients} projects={projects} />
-        </ResponsiveFormDialog>
-      </div>
-
       <Tabs defaultValue="projects">
         <TabsList className="max-w-4xl">
           <TabsTrigger value="projects">Projets</TabsTrigger>
@@ -271,7 +233,16 @@ export default async function ActivityDetailPage({
             <SectionTitle
               icon={BriefcaseBusiness}
               title="Projets"
-              description="Chaque projet porte ses objectifs, taches, finances et factures."
+              trailing={
+                <TabActionDialog
+                  title="Nouveau projet"
+                  description="Le projet herite cette activite."
+                  triggerAriaLabel="Nouveau projet"
+                  triggerIcon={<FolderPlus className="h-4 w-4" />}
+                >
+                  <ProjectForm activityId={activity.id} clients={clients} />
+                </TabActionDialog>
+              }
             />
             <div className="space-y-3">
               {activity.projects.length ? (
@@ -325,7 +296,24 @@ export default async function ActivityDetailPage({
 
         <TabsContent value="clients">
           <Panel>
-            <SectionTitle icon={UsersRound} title="Clients" description="Contacts relies." />
+            <SectionTitle
+              icon={UsersRound}
+              title="Clients"
+              trailing={
+                <TabActionDialog
+                  title="Associer un client"
+                  description="Lien direct avec l'activite ou un projet."
+                  triggerAriaLabel="Associer un client"
+                  triggerIcon={<UserPlus className="h-4 w-4" />}
+                >
+                  <ActivityClientLinkForm
+                    activityId={activity.id}
+                    clients={clients}
+                    projects={projects}
+                  />
+                </TabActionDialog>
+              }
+            />
             <div className="grid gap-3 md:grid-cols-2">
               {activity.clients.length ? (
                 activity.clients.map((client) => (
@@ -351,25 +339,7 @@ export default async function ActivityDetailPage({
           <div className="grid gap-6 xl:grid-cols-2">
             <Panel>
               <SectionTitle icon={ListTodo} title="Taches" description="Execution ouverte." />
-              <div className="space-y-3">
-                {activity.tasks.length ? (
-                  activity.tasks.slice(0, 8).map((task) => (
-                    <article key={task.id} className="rounded-xl bg-black px-4 py-4 ring-1 ring-white/8">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-medium text-white">{task.title}</h3>
-                          <p className="mt-2 text-sm text-zinc-500">
-                            {task.projectName || "Sans projet"} | {formatDate(task.dueDate)}
-                          </p>
-                        </div>
-                        <StatusBadge value={task.status} />
-                      </div>
-                    </article>
-                  ))
-                ) : (
-                  <EmptyState title="Aucune tache" description="Aucune execution ouverte." />
-                )}
-              </div>
+              <TaskKanbanBoard tasks={activity.tasks} />
             </Panel>
 
             <Panel>
