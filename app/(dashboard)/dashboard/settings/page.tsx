@@ -21,7 +21,6 @@ import { getWorkspaceContext } from "@/lib/auth/server";
 
 export default async function SettingsPage() {
   const { activeWorkspace, profile, user, workspaces } = await getWorkspaceContext();
-  console.log("workspaces", workspaces);
   return (
     <div className="space-y-8">
 

@@ -1,3 +1,4 @@
+import { getWorkspaceContext } from "@/lib/auth/server";
 import Link from "next/link";
 
 const focusItems = [
@@ -15,7 +16,8 @@ const focusItems = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const { user } = await getWorkspaceContext();
   return (
     <main className="flex h-dvh items-center justify-center overflow-hidden bg-background px-4">
       <section className="w-full max-w-sm text-center">
@@ -23,7 +25,7 @@ export default function Home() {
           NuruTrack
         </p>
 
-        <h1 className="mt-5 font-heading text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+        <h1 className="mt-5 font-heading text-3xl font-semibold tracking-tighter text-white sm:text-4xl">
           Projets, taches, finances.
         </h1>
 
@@ -44,24 +46,26 @@ export default function Home() {
         </div>
 
         <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href="/dashboard"
-            className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/80 transition hover:border-white/20 hover:text-white"
-          >
-            Ouvrir le dashboard
-          </Link>
-
-          <div className="flex items-center gap-4 text-xs">
-            <Link href="/auth/login" className="text-white/45 transition hover:text-white/75">
-              Connexion
-            </Link>
+          {user ? (
             <Link
-              href="/auth/register"
-              className="text-white/45 transition hover:text-white/75"
+              href="/dashboard"
+              className="rounded-full border border-white/10 px-4 py-2 text-xs text-white/80 transition hover:border-white/20 hover:text-white"
             >
-              Inscription
+              Ouvrir le dashboard
             </Link>
-          </div>
+          ) : (
+            <div className="flex items-center gap-4 text-xs">
+              <Link href="/auth/login" className="text-white/45 transition hover:text-white/75">
+                Connexion
+              </Link>
+              <Link
+                href="/auth/register"
+                className="text-white/45 transition hover:text-white/75"
+              >
+                Inscription
+              </Link>
+            </div>
+          )}
         </div>
       </section>
     </main>
