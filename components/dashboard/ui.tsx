@@ -40,7 +40,7 @@ export const formSelectClassName =
   "app-input focus:border-brand-400";
 
 export const formTextareaClassName =
-  "app-input min-h-32 resize-y placeholder:text-zinc-500 focus:border-brand-400";
+  "app-input min-h-16 resize-y placeholder:text-zinc-500 focus:border-brand-400";
 
 export const primaryButtonClassName =
   "app-button-primary hover:brightness-[1.04]";

@@ -17,7 +17,18 @@ import {
   UserSearch,
   Workflow,
 } from "lucide-react";
-import { FaLinkedin } from "react-icons/fa";
+import { CEOAgent } from "@/components/agents-ia/ceo-agent";
+import { CommercialAgent } from "@/components/agents-ia/commercial-agent";
+import { LinkedInAgent } from "@/components/agents-ia/linkedin-agent";
+import { MarketingAgent } from "@/components/agents-ia/marketing-agent";
+import { ContentCreatorAgent } from "@/components/agents-ia/content-creator-agent";
+import { ProjectsManagerAgent } from "@/components/agents-ia/projects-manager-agent";
+import { ProductsManagerAgent } from "@/components/agents-ia/products-manager-agent";
+import { SupportClientAgent } from "@/components/agents-ia/support-client-agent";
+import { FinanceAgent } from "@/components/agents-ia/finance-agent";
+import { ComptableAgent } from "@/components/agents-ia/comptable-agent";
+import { BusinessIntelligenceAgent } from "@/components/agents-ia/busines-intelligence-agent";
+import { AutomationAgent } from "@/components/agents-ia/automation-agent";
 
 export type AiAgent = {
   slug: string;
@@ -28,6 +39,7 @@ export type AiAgent = {
   capabilities: string[];
   example?: string;
   icon: LucideIcon;
+  children: React.ReactNode;
 };
 
 export const aiAgents: AiAgent[] = [
@@ -48,6 +60,7 @@ export const aiAgents: AiAgent[] = [
     example:
       "Tu as 5 leads chauds à contacter aujourd’hui et 2 projets dont les échéances approchent.",
     icon: Bot,
+    children: (<CEOAgent/>)
   },
   {
     slug: "commercial",
@@ -65,6 +78,7 @@ export const aiAgents: AiAgent[] = [
     ],
     example: "Cette entreprise a 85 % de chance de devenir cliente.",
     icon: BriefcaseBusiness,
+    children: (<CommercialAgent />),
   },
   {
     slug: "linkedin-outreach",
@@ -83,6 +97,7 @@ export const aiAgents: AiAgent[] = [
     example:
       "Voici 20 CTO susceptibles d’être intéressés par l’automatisation IA.",
     icon: AtSign,
+    children: (<LinkedInAgent />),
   },
   {
     slug: "marketing",
@@ -100,6 +115,7 @@ export const aiAgents: AiAgent[] = [
     ],
     example: "Ce post a le potentiel d’obtenir plus d’engagement.",
     icon: Megaphone,
+    children: (<MarketingAgent />),
   },
   {
     slug: "creation-contenu",
@@ -116,6 +132,7 @@ export const aiAgents: AiAgent[] = [
       "Création d’études de cas clients",
     ],
     icon: PenTool,
+    children: (<ContentCreatorAgent />),
   },
   {
     slug: "gestionnaire-projets",
@@ -133,6 +150,7 @@ export const aiAgents: AiAgent[] = [
     ],
     example: "Le projet Ajira risque un retard de 7 jours.",
     icon: ListTodo,
+    children: (<ProjectsManagerAgent />),
   },
   {
     slug: "product-manager",
@@ -149,6 +167,7 @@ export const aiAgents: AiAgent[] = [
       "Suggestions de fonctionnalités",
     ],
     icon: Package,
+    children: (<ProductsManagerAgent />),
   },
   {
     slug: "support-client",
@@ -165,6 +184,7 @@ export const aiAgents: AiAgent[] = [
       "Escalade vers un humain",
     ],
     icon: Headphones,
+    children: (<SupportClientAgent />),
   },
   {
     slug: "finance",
@@ -182,6 +202,7 @@ export const aiAgents: AiAgent[] = [
     ],
     example: "Votre marge ce mois-ci est de 37 %.",
     icon: Landmark,
+    children: (<FinanceAgent />)
   },
   {
     slug: "comptable",
@@ -198,6 +219,7 @@ export const aiAgents: AiAgent[] = [
       "Contrôle des opérations comptables",
     ],
     icon: Calculator,
+    children: (<ComptableAgent />)
   },
   {
     slug: "business-intelligence",
@@ -216,6 +238,7 @@ export const aiAgents: AiAgent[] = [
     example:
       "Les services d’automatisation IA génèrent 60 % des revenus de l’entreprise.",
     icon: BarChart3,
+    children: (<BusinessIntelligenceAgent />)
   },
   {
     slug: "automatisation-n8n",
@@ -232,6 +255,7 @@ export const aiAgents: AiAgent[] = [
       "Optimisation des automatisations",
     ],
     icon: Workflow,
+    children: (<AutomationAgent />)
   },
 ];
 
