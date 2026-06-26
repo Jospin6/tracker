@@ -24,7 +24,6 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils/format";
 
 type TaskBoardItem = {
-  activityName: string | null;
   description: string | null;
   dueDate: string | Date | null;
   estimatedMinutes: number | null;
@@ -41,7 +40,7 @@ type TaskKanbanBoardProps = {
 };
 
 function buildScopeLabel(task: TaskBoardItem) {
-  const scopeParts = [task.projectName, task.goalName, task.activityName].filter(Boolean);
+  const scopeParts = [task.projectName, task.goalName].filter(Boolean);
 
   if (!scopeParts.length) {
     return "Sans contexte";

@@ -6,12 +6,10 @@ import {
   ListTodo,
   Target,
   TrendingUp,
-  UserPlus,
   UsersRound,
 } from "lucide-react";
 
 import {
-  assignClientRelationshipsAction,
   createGoalAction,
   createInvoiceAction,
   createTaskAction,
@@ -38,46 +36,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getProjectDetailPageData } from "@/lib/data/dashboard";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 
-function ProjectClientForm({
-  activityId,
-  clients,
-  projectId,
-}: {
-  activityId: string | null;
-  clients: Array<{ id: string; label: string }>;
-  projectId: string;
-}) {
-  return (
-    <form action={assignClientRelationshipsAction} className="space-y-4">
-      <input type="hidden" name="activityId" value={activityId ?? ""} />
-      <input type="hidden" name="projectId" value={projectId} />
-
-      <FormField label="Client">
-        <select name="clientId" required defaultValue="" className={formSelectClassName}>
-          <option value="">Choisir un client</option>
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>
-              {client.label}
-            </option>
-          ))}
-        </select>
-      </FormField>
-
-      <SubmitButton idleLabel="Associer" className={`w-full ${secondaryButtonClassName}`} />
-    </form>
-  );
-}
-
-function GoalForm({
-  activityId,
-  projectId,
-}: {
-  activityId: string | null;
-  projectId: string;
-}) {
+function GoalForm({ projectId }: { projectId: string }) {
   return (
     <form action={createGoalAction} className="space-y-4">
-      <input type="hidden" name="activityId" value={activityId ?? ""} />
       <input type="hidden" name="projectId" value={projectId} />
 
       <FormField label="Titre">
@@ -133,17 +94,14 @@ function GoalForm({
 }
 
 function TaskForm({
-  activityId,
   goals,
   projectId,
 }: {
-  activityId: string | null;
   goals: Array<{ id: string; title: string }>;
   projectId: string;
 }) {
   return (
     <form action={createTaskAction} className="space-y-4">
-      <input type="hidden" name="activityId" value={activityId ?? ""} />
       <input type="hidden" name="projectId" value={projectId} />
 
       <FormField label="Titre">
@@ -212,18 +170,9 @@ function TaskForm({
   );
 }
 
-function FinanceForm({
-  activityId,
-  clients,
-  projectId,
-}: {
-  activityId: string | null;
-  clients: Array<{ id: string; label: string }>;
-  projectId: string;
-}) {
+function FinanceForm({ projectId }: { projectId: string }) {
   return (
     <form action={createTransactionAction} className="space-y-4">
-      <input type="hidden" name="activityId" value={activityId ?? ""} />
       <input type="hidden" name="projectId" value={projectId} />
 
       <FormField label="Libelle">
@@ -254,20 +203,9 @@ function FinanceForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Client">
-          <select name="clientId" defaultValue="" className={formSelectClassName}>
-            <option value="">Sans client</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField label="Devise">
-          <input name="currency" defaultValue="EUR" className={formControlClassName} />
-        </FormField>
+      <FormField label="Devise">
+        <input name="currency" defaultValue="EUR" className={formControlClassName} />
+      </FormField>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -293,18 +231,9 @@ function FinanceForm({
   );
 }
 
-function InvoiceForm({
-  activityId,
-  clients,
-  projectId,
-}: {
-  activityId: string | null;
-  clients: Array<{ id: string; label: string }>;
-  projectId: string;
-}) {
+function InvoiceForm({ projectId }: { projectId: string }) {
   return (
     <form action={createInvoiceAction} className="space-y-4">
-      <input type="hidden" name="activityId" value={activityId ?? ""} />
       <input type="hidden" name="projectId" value={projectId} />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -312,16 +241,6 @@ function InvoiceForm({
           <input name="invoiceNumber" required placeholder="INV-001" className={formControlClassName} />
         </FormField>
 
-        <FormField label="Client">
-          <select name="clientId" defaultValue="" className={formSelectClassName}>
-            <option value="">Sans client</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -396,10 +315,7 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
-  const { clients, project } = data;
-  const financeClientOptions = project.clients.length
-    ? project.clients.map((client) => ({ id: client.id, label: client.name }))
-    : clients;
+  const { companies, project } = data;
 
   return (
     <div className="space-y-8">
@@ -407,9 +323,9 @@ export default async function ProjectDetailPage({
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={<UsersRound className="h-5 w-5" />}
-          label="Clients"
-          value={String(project.clientCount)}
-          hint={project.clientNames.join(" | ") || "Sans client"}
+          label="Entreprise"
+          value={project.companyName || "Sans entreprise"}
+          hint={`${project.contactCount} contact(s)`}
         />
         <MetricCard
           icon={<BadgeDollarSign className="h-5 w-5" />}
@@ -433,60 +349,82 @@ export default async function ProjectDetailPage({
 
       <MetaStrip
         items={[
-          { label: "Activite", value: project.activityName || "-" },
+          { label: "Entreprise", value: project.companyName || "-" },
+          { label: "Contacts", value: project.contactNames.join(" | ") || "-" },
           { label: "Echeance", value: formatDate(project.dueDate) },
           { label: "Progression", value: formatPercent(project.progress) },
           { label: "Objectifs", value: `${project.goalsCount} | ${formatPercent(project.goalAverageProgress)}` },
         ]}
       />
 
-      <Tabs defaultValue="clients">
+      <Tabs defaultValue="company">
         <TabsList className="max-w-5xl">
-          <TabsTrigger value="clients">Clients</TabsTrigger>
+          <TabsTrigger value="company">Entreprise</TabsTrigger>
           <TabsTrigger value="goals">Objectifs</TabsTrigger>
           <TabsTrigger value="tasks">Taches</TabsTrigger>
           <TabsTrigger value="finances">Finances</TabsTrigger>
           <TabsTrigger value="invoices">Factures</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="clients">
+        <TabsContent value="company">
           <Panel>
             <SectionTitle
               icon={UsersRound}
-              title="Clients"
-              trailing={
-                <TabActionDialog
-                  title="Associer un client"
-                  description="Lien direct avec le projet."
-                  triggerAriaLabel="Associer un client"
-                  triggerIcon={<UserPlus className="h-4 w-4" />}
-                >
-                  <ProjectClientForm
-                    activityId={project.activityId}
-                    clients={clients}
-                    projectId={project.id}
-                  />
-                </TabActionDialog>
-              }
+              title="Entreprise"
+              description="Entreprise liée au projet et contacts disponibles."
             />
             <div className="space-y-3">
-              {project.clients.length ? (
-                project.clients.map((client) => (
-                  <article key={client.id} className="rounded-xl bg-black px-4 py-4 ring-1 ring-white/8">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-medium text-white">{client.name}</h3>
-                        <p className="mt-2 text-sm text-zinc-500">
-                          {client.company || client.email || "Contact"}
-                        </p>
-                      </div>
-                      <StatusBadge value={client.status} />
+              {project.company ? (
+                <article className="rounded-xl bg-black px-4 py-4 ring-1 ring-white/8">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-medium text-white">{project.company.name}</h3>
+                      <p className="mt-2 text-sm text-zinc-500">
+                        {project.company.industry || project.company.email || "Entreprise suivie"}
+                      </p>
                     </div>
-                  </article>
-                ))
+                    <StatusBadge value={project.company.status} />
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl bg-black px-4 py-3 ring-1 ring-white/8">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                        Contacts
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-white">
+                        {project.contactCount}
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-black px-4 py-3 ring-1 ring-white/8">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                        Projets lies
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-white">
+                        {project.companyName ? 1 : 0}
+                      </p>
+                    </div>
+                  </div>
+                </article>
               ) : (
-                <EmptyState title="Aucun client" description="Associe un client au projet." />
+                <EmptyState title="Aucune entreprise" description="Associe une entreprise au projet." />
               )}
+
+              {project.companyContacts.length ? (
+                <div className="space-y-2">
+                  {project.companyContacts.map((contact) => (
+                    <article key={contact.id} className="rounded-xl bg-black px-4 py-4 ring-1 ring-white/8">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h4 className="font-medium text-white">{contact.fullName}</h4>
+                          <p className="mt-2 text-sm text-zinc-500">
+                            {contact.jobTitle || contact.email || "Contact"}
+                          </p>
+                        </div>
+                        <StatusBadge value={contact.status} />
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </Panel>
         </TabsContent>
@@ -503,7 +441,7 @@ export default async function ProjectDetailPage({
                   triggerAriaLabel="Nouvel objectif"
                   triggerIcon={<CirclePlus className="h-4 w-4" />}
                 >
-                  <GoalForm activityId={project.activityId} projectId={project.id} />
+                  <GoalForm projectId={project.id} />
                 </TabActionDialog>
               }
             />
@@ -541,11 +479,7 @@ export default async function ProjectDetailPage({
                   triggerAriaLabel="Nouvelle tache"
                   triggerIcon={<CirclePlus className="h-4 w-4" />}
                 >
-                  <TaskForm
-                    activityId={project.activityId}
-                    goals={project.goals}
-                    projectId={project.id}
-                  />
+                  <TaskForm goals={project.goals} projectId={project.id} />
                 </TabActionDialog>
               }
             />
@@ -580,17 +514,13 @@ export default async function ProjectDetailPage({
                 icon={TrendingUp}
                 title="Flux"
                 trailing={
-                  <TabActionDialog
-                    title="Nouveau flux"
-                    description="Revenu ou depense du projet."
-                    triggerAriaLabel="Nouveau flux"
-                    triggerIcon={<CirclePlus className="h-4 w-4" />}
-                  >
-                    <FinanceForm
-                      activityId={project.activityId}
-                      clients={financeClientOptions}
-                      projectId={project.id}
-                    />
+                <TabActionDialog
+                  title="Nouveau flux"
+                  description="Revenu ou depense du projet."
+                  triggerAriaLabel="Nouveau flux"
+                  triggerIcon={<CirclePlus className="h-4 w-4" />}
+                >
+                    <FinanceForm projectId={project.id} />
                   </TabActionDialog>
                 }
               />
@@ -604,7 +534,7 @@ export default async function ProjectDetailPage({
                             {transaction.description || transaction.category || "Operation"}
                           </h3>
                           <p className="mt-2 text-sm text-zinc-500">
-                            {transaction.clientName || "Sans client"} | {formatDate(transaction.transactionDate)}
+                            {transaction.companyName || "Sans entreprise"} | {formatDate(transaction.transactionDate)}
                           </p>
                         </div>
                         <StatusBadge value={transaction.type} />
@@ -634,11 +564,7 @@ export default async function ProjectDetailPage({
                   triggerAriaLabel="Nouvelle facture"
                   triggerIcon={<CirclePlus className="h-4 w-4" />}
                 >
-                  <InvoiceForm
-                    activityId={project.activityId}
-                    clients={financeClientOptions}
-                    projectId={project.id}
-                  />
+                  <InvoiceForm projectId={project.id} />
                 </TabActionDialog>
               }
             />
@@ -650,7 +576,7 @@ export default async function ProjectDetailPage({
                       <div>
                         <h3 className="font-medium text-white">{invoice.invoiceNumber}</h3>
                         <p className="mt-2 text-sm text-zinc-500">
-                          {invoice.clientName || "Sans client"} | {formatDate(invoice.dueAt)}
+                          {invoice.companyName || "Sans entreprise"} | {formatDate(invoice.dueAt)}
                         </p>
                       </div>
                       <StatusBadge value={invoice.status} />

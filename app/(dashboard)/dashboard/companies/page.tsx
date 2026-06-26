@@ -30,12 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { getCompaniesPageData } from "@/lib/data/dashboard";
 
-type ActivityOption = {
-  id: string;
-  label: string;
-};
-
-function CompanyForm({ activities }: { activities: ActivityOption[] }) {
+function CompanyForm() {
   return (
     <form action={createCompanyAction} className="space-y-4">
       <FormField label="Nom de l'entreprise">
@@ -63,20 +58,6 @@ function CompanyForm({ activities }: { activities: ActivityOption[] }) {
           </select>
         </FormField>
 
-        <FormField label="Activité">
-          <select
-            name="activityId"
-            defaultValue=""
-            className={formSelectClassName}
-          >
-            <option value="">Aucune</option>
-            {activities.map((activity) => (
-              <option key={activity.id} value={activity.id}>
-                {activity.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -170,7 +151,7 @@ function CompanyForm({ activities }: { activities: ActivityOption[] }) {
 }
 
 export default async function CompaniesPage() {
-  const { activities, companies } = await getCompaniesPageData();
+  const { companies } = await getCompaniesPageData();
 
   return (
     <div className="space-y-8">
@@ -195,7 +176,7 @@ export default async function CompaniesPage() {
               </DialogDescription>
             </DialogHeader>
 
-            <CompanyForm activities={activities} />
+            <CompanyForm />
           </DialogContent>
         </Dialog>
       </div>
@@ -371,7 +352,6 @@ export default async function CompaniesPage() {
                             <CompanyEditForm
                               action={updateCompanyAction}
                               company={company}
-                              activities={activities}
                             />
                           </DialogContent>
                         </Dialog>

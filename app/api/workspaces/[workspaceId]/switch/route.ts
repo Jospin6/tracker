@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-import { clearActivityCookie, setWorkspaceCookie } from "@/lib/auth/cookies";
+import { setWorkspaceCookie } from "@/lib/auth/cookies";
 
 async function getWorkspaceSwitchDependencies() {
   const [{ db }, { workspaceMembers }, { getCurrentUserOrNull }] =
@@ -49,7 +49,6 @@ export async function POST(
 
   const cookieStore = await cookies();
   setWorkspaceCookie(cookieStore, workspaceId);
-  clearActivityCookie(cookieStore);
 
   return NextResponse.json({ ok: true });
 }

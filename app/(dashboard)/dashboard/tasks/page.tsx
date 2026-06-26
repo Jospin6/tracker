@@ -22,7 +22,7 @@ import {
 } from "@/lib/tasks";
 
 export default async function TasksPage() {
-  const { activities, goals, projects, tasks } = await getTasksPageData();
+  const { goals, projects, tasks } = await getTasksPageData();
 
   const taskCounts = taskStatusOrder.reduce((acc, status) => {
     acc[status] = tasks.filter((task) => task.status === status).length;
@@ -95,24 +95,19 @@ export default async function TasksPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Activite">
-                <select
-                  name="activityId"
-                  required
-                  defaultValue={activities[0]?.id ?? ""}
-                  className={formSelectClassName}
-                >
-                  <option value="">Choisir une activite</option>
-                  {activities.map((activity) => (
-                    <option key={activity.id} value={activity.id}>
-                      {activity.label}
+              <FormField label="Echeance">
+                <input name="dueDate" type="date" className={formControlClassName} />
+              </FormField>
+
+              <FormField label="Projet">
+                <select name="projectId" defaultValue="" className={formSelectClassName}>
+                  <option value="">Sans projet</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.label}
                     </option>
                   ))}
                 </select>
-              </FormField>
-
-              <FormField label="Echeance">
-                <input name="dueDate" type="date" className={formControlClassName} />
               </FormField>
             </div>
 

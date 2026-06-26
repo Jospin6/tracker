@@ -10,7 +10,6 @@ export const AUTH_COOKIE_NAMES = {
 } as const;
 
 export const WORKSPACE_COOKIE_NAME = "nurutrack-workspace-id";
-export const ACTIVITY_COOKIE_NAME = "nurutrack-activity-id";
 
 type CookieStore = Awaited<ReturnType<typeof cookies>>;
 type CookieOptions = Parameters<CookieStore["set"]>[2];
@@ -94,21 +93,4 @@ export function setWorkspaceCookie(
 
 export function clearWorkspaceCookie(cookieStore: WritableCookies) {
   cookieStore.delete(WORKSPACE_COOKIE_NAME);
-}
-
-export function setActivityCookie(
-  cookieStore: WritableCookies,
-  activityId: string
-) {
-  cookieStore.set(ACTIVITY_COOKIE_NAME, activityId, {
-    httpOnly: true,
-    maxAge: oneYearInSeconds,
-    path: "/",
-    sameSite: "lax",
-    secure,
-  });
-}
-
-export function clearActivityCookie(cookieStore: WritableCookies) {
-  cookieStore.delete(ACTIVITY_COOKIE_NAME);
 }

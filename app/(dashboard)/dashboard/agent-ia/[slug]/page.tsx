@@ -1,26 +1,9 @@
 import type { Metadata } from "next";
 
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import {
-  ArrowLeft,
-  Bot,
-  CheckCircle2,
-  CircleDot,
-  Lightbulb,
-  Workflow,
-} from "lucide-react";
-
-import {
-  Panel,
-  SectionTitle,
-  secondaryButtonClassName,
-} from "@/components/dashboard/ui";
-import {
-  aiAgents,
-  getAiAgentBySlug,
-} from "@/lib/data/ai-agents";
+import { AgentChatShell } from "@/components/agents-ia/agent-chat-shell";
+import { AGENT_ORDER, getAgentDefinition } from "@/lib/ai/agents";
 
 type AgentPageProps = {
   params: Promise<{
@@ -29,8 +12,8 @@ type AgentPageProps = {
 };
 
 export function generateStaticParams() {
-  return aiAgents.map((agent) => ({
-    slug: agent.slug,
+  return AGENT_ORDER.map((slug) => ({
+    slug,
   }));
 }
 
@@ -38,7 +21,7 @@ export async function generateMetadata({
   params,
 }: AgentPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const agent = getAiAgentBySlug(slug);
+  const agent = getAgentDefinition(slug);
 
   if (!agent) {
     return {
@@ -47,7 +30,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: agent.name,
+    title: agent.label,
     description: agent.description,
   };
 }
@@ -56,21 +39,11 @@ export default async function AgentDetailsPage({
   params,
 }: AgentPageProps) {
   const { slug } = await params;
-  const agent = getAiAgentBySlug(slug);
+  const agent = getAgentDefinition(slug);
 
   if (!agent) {
     notFound();
   }
 
-  const Icon = agent.icon;
-
-  return (
-    <div className="space-y-8">
-      <Panel>
-        <div>
-          {agent.children}
-        </div>
-      </Panel>
-    </div>
-  );
+  return <AgentChatShell initialAgentId={agent.id} />;
 }

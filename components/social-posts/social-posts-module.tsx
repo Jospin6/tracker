@@ -107,11 +107,10 @@ function SocialTargetsFieldset({
 }
 
 function ManualPostForm({
-  activities,
   channelOptions,
   goals,
   projects,
-}: Pick<SocialPostsPageData, "activities" | "channelOptions" | "goals" | "projects">) {
+}: Pick<SocialPostsPageData, "channelOptions" | "goals" | "projects">) {
   return (
     <form action={createSocialPostAction} className="space-y-4">
       <FormField label="Titre">
@@ -169,7 +168,7 @@ function ManualPostForm({
         </FormField>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Projet">
           <select name="projectId" defaultValue="" className={formSelectClassName}>
             <option value="">Sans projet</option>
@@ -187,22 +186,6 @@ function ManualPostForm({
             {goals.map((goal) => (
               <option key={goal.id} value={goal.id}>
                 {goal.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField label="Activité">
-          <select
-            name="activityId"
-            required
-            defaultValue={activities[0]?.id ?? ""}
-            className={formSelectClassName}
-          >
-            <option value="">Choisir une activite</option>
-            {activities.map((activity) => (
-              <option key={activity.id} value={activity.id}>
-                {activity.label}
               </option>
             ))}
           </select>
@@ -270,11 +253,10 @@ function ManualPostForm({
 }
 
 function AiPostForm({
-  activities,
   channelOptions,
   goals,
   projects,
-}: Pick<SocialPostsPageData, "activities" | "channelOptions" | "goals" | "projects">) {
+}: Pick<SocialPostsPageData, "channelOptions" | "goals" | "projects">) {
   return (
     <form action={generateSocialPostAction} className="space-y-4">
       <FormField label="Brief">
@@ -357,7 +339,7 @@ function AiPostForm({
         </FormField>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Projet">
           <select name="projectId" defaultValue="" className={formSelectClassName}>
             <option value="">Sans projet</option>
@@ -375,22 +357,6 @@ function AiPostForm({
             {goals.map((goal) => (
               <option key={goal.id} value={goal.id}>
                 {goal.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField label="Activité">
-          <select
-            name="activityId"
-            required
-            defaultValue={activities[0]?.id ?? ""}
-            className={formSelectClassName}
-          >
-            <option value="">Choisir une activite</option>
-            {activities.map((activity) => (
-              <option key={activity.id} value={activity.id}>
-                {activity.label}
               </option>
             ))}
           </select>
@@ -591,7 +557,7 @@ function PostsPipeline({
 
                 <p className="text-sm text-zinc-500">
                   {socialPlatformLabels[post.platform]} • {post.projectName || "Sans projet"} •{" "}
-                  {post.goalName || "Sans objectif"} • {post.activityName || "Sans activité"}
+                  {post.goalName || "Sans objectif"} • {post.companyName || "Sans entreprise"}
                 </p>
 
                 <p className="text-sm leading-6 text-zinc-300">{post.content || "Aucun contenu."}</p>
@@ -928,7 +894,6 @@ export function SocialPostsModule({
                   }
                 />
                 <ManualPostForm
-                  activities={data.activities}
                   channelOptions={data.channelOptions}
                   goals={data.goals}
                   projects={data.projects}
@@ -946,7 +911,6 @@ export function SocialPostsModule({
                   }
                 />
                 <AiPostForm
-                  activities={data.activities}
                   channelOptions={data.channelOptions}
                   goals={data.goals}
                   projects={data.projects}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, Building2, ChevronDown, Settings } from "lucide-react";
+import { Building2, ChevronDown, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,25 +14,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { WorkspaceSelect } from "@/components/shared/workspace-select";
-import { ActivitySelect } from "@/components/shared/activity-select";
 
 export default function Header({
-  activeActivityId,
   activeWorkspaceId,
-  activities,
   workspaces,
 }: {
-  activeActivityId: string | null;
   activeWorkspaceId: string;
-  activities: Array<{ id: string; name: string }>;
   workspaces: Array<{ id: string; name: string }>;
 }) {
   const activeWorkspace = workspaces.find(
     (workspace) => workspace.id === activeWorkspaceId,
-  );
-
-  const activeActivity = activities.find(
-    (activity) => activity.id === activeActivityId,
   );
 
   return (
@@ -65,21 +56,10 @@ export default function Header({
             </DropdownMenuLabel>
 
             <div className="space-y-3 px-1 py-2">
-              <div className="space-y-1.5">
-                <WorkspaceSelect
-                  activeWorkspaceId={activeWorkspaceId}
-                  workspaces={workspaces}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="text-xs text-white/50">Activité</p>
-
-                <ActivitySelect
-                  activeActivityId={activeActivityId}
-                  activities={activities}
-                />
-              </div>
+              <WorkspaceSelect
+                activeWorkspaceId={activeWorkspaceId}
+                workspaces={workspaces}
+              />
             </div>
 
             <DropdownMenuSeparator className="my-3 bg-white/10" />
@@ -87,11 +67,11 @@ export default function Header({
             <div className="space-y-1 px-1 pt-2">
               <DropdownMenuItem asChild>
                 <Link
-                  href="/dashboard/activities"
+                  href="/dashboard/companies"
                   className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white"
                 >
-                  <Activity className="h-4 w-4" />
-                  Activités
+                  <Building2 className="h-4 w-4" />
+                  Entreprises
                 </Link>
               </DropdownMenuItem>
 
@@ -101,7 +81,7 @@ export default function Header({
                   className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white"
                 >
                   <Settings className="h-4 w-4" />
-                  Paramètres
+                  Parametres
                 </Link>
               </DropdownMenuItem>
             </div>

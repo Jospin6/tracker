@@ -6,6 +6,7 @@ import { ProgressBar } from "@/components/shared/progress-bar";
 import { SubmitButton } from "@/components/shared/submit-button";
 import {
   EmptyState,
+  FormField,
   PageIntro,
   Panel,
   SectionTitle,
@@ -15,7 +16,7 @@ import { getGoalsPageData } from "@/lib/data/dashboard";
 import { formatDate } from "@/lib/utils/format";
 
 export default async function GoalsPage() {
-  const { activities, goals, projects } = await getGoalsPageData();
+  const { goals, projects } = await getGoalsPageData();
 
   return (
     <div className="space-y-8">
@@ -24,7 +25,7 @@ export default async function GoalsPage() {
         <Panel>
           <SectionTitle
             title="Nouvel objectif"
-            description="Associe un objectif a un projet ou a une activite si besoin."
+            description="Associe un objectif a un projet."
           />
           <form action={createGoalAction} className="space-y-4">
             <input
@@ -60,7 +61,7 @@ export default async function GoalsPage() {
                 className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Projet">
               <select
                 name="projectId"
                 defaultValue=""
@@ -73,20 +74,7 @@ export default async function GoalsPage() {
                   </option>
                 ))}
               </select>
-              <select
-                name="activityId"
-                required
-                defaultValue={activities[0]?.id ?? ""}
-                className="rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-500"
-              >
-                <option value="">Choisir une activite</option>
-                {activities.map((activity) => (
-                  <option key={activity.id} value={activity.id}>
-                    {activity.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            </FormField>
             <div className="grid gap-4 sm:grid-cols-3">
               <input
                 name="targetValue"
@@ -135,8 +123,8 @@ export default async function GoalsPage() {
                         <StatusBadge value={goal.status} />
                       </div>
                       <p className="mt-2 text-sm text-slate-400">
-                        Projet: {goal.projectName || "Sans projet"} | Activite:{" "}
-                        {goal.activityName || "Sans activite"}
+                        Projet: {goal.projectName || "Sans projet"} | Entreprise:{" "}
+                        {goal.companyName || "Sans entreprise"}
                       </p>
                     </div>
 

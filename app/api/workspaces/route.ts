@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-import { clearActivityCookie, setWorkspaceCookie } from "@/lib/auth/cookies";
+import { setWorkspaceCookie } from "@/lib/auth/cookies";
 import { slugify } from "@/lib/utils/strings";
 
 async function getWorkspaceDependencies() {
@@ -117,7 +117,6 @@ export async function POST(request: Request) {
 
     const cookieStore = await cookies();
     setWorkspaceCookie(cookieStore, workspace.id);
-    clearActivityCookie(cookieStore);
 
     return NextResponse.json({ workspace }, { status: 201 });
   } catch (error) {

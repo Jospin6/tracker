@@ -18,7 +18,6 @@ type ContactEditFormProps = {
     lastName?: string | null;
     fullName: string;
     companyId?: string | null;
-    activityId?: string | null;
     jobTitle?: string | null;
     department?: string | null;
     email?: string | null;
@@ -30,21 +29,18 @@ type ContactEditFormProps = {
     notes?: string | null;
   };
   companies: Array<{ id: string; label: string }>;
-  activities: Array<{ id: string; label: string }>;
 };
 
 export default function ContactEditForm({
   action,
   contact,
   companies,
-  activities,
 }: ContactEditFormProps) {
   const [formState, setFormState] = useState({
     firstName: "",
     lastName: "",
     fullName: "",
     companyId: "",
-    activityId: "",
     jobTitle: "",
     department: "",
     email: "",
@@ -62,7 +58,6 @@ export default function ContactEditForm({
       lastName: contact.lastName ?? "",
       fullName: contact.fullName ?? "",
       companyId: contact.companyId ?? "",
-      activityId: contact.activityId ?? "",
       jobTitle: contact.jobTitle ?? "",
       department: contact.department ?? "",
       email: contact.email ?? "",
@@ -119,39 +114,21 @@ export default function ContactEditForm({
         />
       </FormField>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Entreprise">
-          <select
-            name="companyId"
-            value={formState.companyId}
-            onChange={handleChange}
-            className={formSelectClassName}
-          >
-            <option value="">Aucune</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField label="Activité">
-          <select
-            name="activityId"
-            value={formState.activityId}
-            onChange={handleChange}
-            className={formSelectClassName}
-          >
-            <option value="">Aucune</option>
-            {activities.map((activity) => (
-              <option key={activity.id} value={activity.id}>
-                {activity.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
-      </div>
+      <FormField label="Entreprise">
+        <select
+          name="companyId"
+          value={formState.companyId}
+          onChange={handleChange}
+          className={formSelectClassName}
+        >
+          <option value="">Aucune</option>
+          {companies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {company.label}
+            </option>
+          ))}
+        </select>
+      </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Titre">

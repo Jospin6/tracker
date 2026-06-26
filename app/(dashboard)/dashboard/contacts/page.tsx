@@ -27,10 +27,8 @@ import ContactEditForm from "@/components/dashboard/contact-edit-form";
 import { getContactsPageData } from "@/lib/data/dashboard";
 
 function ContactForm({
-  activities,
   companies,
 }: {
-  activities: Array<{ id: string; label: string }>;
   companies: Array<{ id: string; label: string }>;
 }) {
   return (
@@ -49,29 +47,16 @@ function ContactForm({
         <input name="fullName" placeholder="Nom complet" className={formControlClassName} />
       </FormField>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Entreprise">
-          <select name="companyId" defaultValue="" className={formSelectClassName}>
-            <option value="">Aucune</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField label="Activité">
-          <select name="activityId" defaultValue="" className={formSelectClassName}>
-            <option value="">Aucune</option>
-            {activities.map((activity) => (
-              <option key={activity.id} value={activity.id}>
-                {activity.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
-      </div>
+      <FormField label="Entreprise">
+        <select name="companyId" defaultValue="" className={formSelectClassName}>
+          <option value="">Aucune</option>
+          {companies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {company.label}
+            </option>
+          ))}
+        </select>
+      </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Titre">
@@ -130,7 +115,7 @@ function ContactForm({
 }
 
 export default async function ContactsPage() {
-  const { activities, companies, contacts } = await getContactsPageData();
+  const { companies, contacts } = await getContactsPageData();
 
   return (
     <div className="space-y-8">
@@ -144,11 +129,11 @@ export default async function ContactsPage() {
           mobileContent={
             <Panel>
               <SectionTitle icon={Plus} title="Nouveau contact" description="Créer une fiche contact." />
-              <ContactForm activities={activities} companies={companies} />
+              <ContactForm companies={companies} />
             </Panel>
           }
         >
-          <ContactForm activities={activities} companies={companies} />
+          <ContactForm companies={companies} />
         </ResponsiveFormDialog>
       </div>
 
@@ -236,7 +221,7 @@ export default async function ContactsPage() {
                             <DrawerHeader>
                               <DrawerTitle>Modifier le contact</DrawerTitle>
                             </DrawerHeader>
-                            <ContactEditForm action={updateContactAction} contact={contact} companies={companies} activities={activities} />
+                            <ContactEditForm action={updateContactAction} contact={contact} companies={companies} />
                           </DrawerContent>
                         </Drawer>
 

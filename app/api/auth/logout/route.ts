@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import {
-  clearActivityCookie,
   clearAuthCookies,
   clearWorkspaceCookie,
   type WritableCookies,
@@ -10,7 +9,6 @@ import {
 function clearSessionCookies(cookieStore: WritableCookies) {
   clearAuthCookies(cookieStore);
   clearWorkspaceCookie(cookieStore);
-  clearActivityCookie(cookieStore);
 }
 
 export async function POST() {

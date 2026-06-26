@@ -6,9 +6,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db/client";
-import { activities, profiles, workspaceMembers, workspaces } from "@/db/schema";
+import { profiles, workspaceMembers, workspaces } from "@/db/schema";
 import {
-  ACTIVITY_COOKIE_NAME,
   clearAuthCookies,
   clearWorkspaceCookie,
   readAuthCookies,
@@ -28,12 +27,6 @@ export type WorkspaceListItem = {
   slug: string;
   status: "active" | "invited" | "suspended" | "removed";
   type: "personal" | "team" | "company" | "agency";
-};
-
-export type ActivityContextItem = {
-  id: string;
-  name: string;
-  status: "active" | "paused" | "completed" | "archived";
 };
 
 async function resolveCurrentUser() {
@@ -169,30 +162,10 @@ export const getWorkspaceContext = cache(async () => {
     memberships.find((workspace) => workspace.id === preferredWorkspaceId) ??
     memberships[0];
 
-  const activityRows = await db
-    .select({
-      id: activities.id,
-      name: activities.name,
-      status: activities.status,
-    })
-    .from(activities)
-    .where(eq(activities.workspaceId, activeWorkspace.id))
-    .orderBy(desc(activities.updatedAt), desc(activities.createdAt));
-
-  const preferredActivityId =
-    cookieStore.get(ACTIVITY_COOKIE_NAME)?.value ?? null;
-
-  const activeActivity =
-    activityRows.find((activity) => activity.id === preferredActivityId) ??
-    activityRows.find((activity) => activity.status === "active") ??
-    activityRows[0] ??
-    null;
-
   return {
+    activeActivity: null as { id: string } | null,
     activeWorkspace,
-    activeActivity,
     profile,
-    activities: activityRows as ActivityContextItem[],
     user,
     workspaces: memberships as WorkspaceListItem[],
   };

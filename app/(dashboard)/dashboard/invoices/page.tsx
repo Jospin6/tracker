@@ -16,7 +16,7 @@ import { getInvoicesPageData } from "@/lib/data/dashboard";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 export default async function InvoicesPage() {
-  const { clients, invoices, projects } = await getInvoicesPageData();
+  const { invoices, projects } = await getInvoicesPageData();
 
   return (
     <div className="space-y-8">
@@ -45,19 +45,7 @@ export default async function InvoicesPage() {
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <select
-                name="clientId"
-                defaultValue=""
-                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
-              >
-                <option value="">Client</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.label}
-                  </option>
-                ))}
-              </select>
+            <div className="grid gap-4">
               <select
                 name="projectId"
                 required
@@ -149,7 +137,7 @@ export default async function InvoicesPage() {
         </Panel>
 
         <Panel>
-          <SectionTitle icon={FileText} title="Factures" description="Projet, client, encours." />
+          <SectionTitle icon={FileText} title="Factures" description="Projet, entreprise, encours." />
           <div className="space-y-4">
             {invoices.length ? (
               invoices.map((invoice) => (
@@ -164,7 +152,7 @@ export default async function InvoicesPage() {
                         <StatusBadge value={invoice.status} />
                       </div>
                       <p className="text-sm text-slate-400">
-                        {invoice.activityName || "Sans activite"} | {invoice.projectName || "Sans projet"} | {invoice.clientName || "Sans client"}
+                        {invoice.companyName || "Sans entreprise"} | {invoice.projectName || "Sans projet"}
                       </p>
                     </div>
 

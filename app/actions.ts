@@ -6,17 +6,13 @@ import { cookies } from "next/headers";
 
 import { db } from "@/db/client";
 import {
-  activities,
-  activityClients,
   budgets,
-  clients,
   companies,
   contacts,
   goals,
   invoiceItems,
   invoices,
   projects,
-  projectClients,
   socialChannels,
   socialPostDeliveries,
   socialPosts,
@@ -27,9 +23,7 @@ import {
 } from "@/db/schema";
 import {
   clearAuthCookies,
-  clearActivityCookie,
   clearWorkspaceCookie,
-  setActivityCookie,
   setWorkspaceCookie,
 } from "@/lib/auth/cookies";
 import { getWorkspaceContext } from "@/lib/auth/server";
@@ -59,7 +53,6 @@ import {
   getStringList,
 } from "@/lib/utils/forms";
 
-const activityStatuses = ["active", "paused", "completed", "archived"] as const;
 const projectStatuses = [
   "idea",
   "planned",
@@ -131,9 +124,7 @@ const socialDeliveryStatuses = [
 ] as const;
 const dashboardPaths = [
   "/dashboard",
-  "/dashboard/activities",
   "/dashboard/budget",
-  "/dashboard/clients",
   "/dashboard/companies",
   "/dashboard/contacts",
   "/dashboard/goals",
@@ -167,12 +158,9 @@ function revalidateDashboardPaths(...paths: string[]) {
 }
 
 async function getActionContext() {
-  const { activeActivity, activities, activeWorkspace, user } =
-    await getWorkspaceContext();
+  const { activeWorkspace, user } = await getWorkspaceContext();
 
   return {
-    activeActivity,
-    activities,
     userId: user.id,
     workspaceId: activeWorkspace.id,
     workspaceName: activeWorkspace.name,
@@ -186,6 +174,7 @@ async function getProjectScope(workspaceId: string, projectId: string | null) {
   const [project] = await db
     .select({
       activityId: projects.activityId,
+      companyId: projects.companyId,
       name: projects.name,
     })
     .from(projects)
@@ -210,21 +199,6 @@ async function getCompanyScope(workspaceId: string, companyId: string | null) {
     .limit(1);
 
   return company ?? null;
-}
-
-function getResolvedActivityId(
-  allowedActivityIds: Set<string>,
-  ...candidates: Array<string | null | undefined>
-) {
-  for (const candidate of candidates) {
-    const value = candidate?.trim() ?? "";
-
-    if (value && allowedActivityIds.has(value)) {
-      return value;
-    }
-  }
-
-  return null;
 }
 
 function getInvoiceStatus(total: number, paidAmount: number, fallback: string) {
@@ -256,42 +230,6 @@ function isMissingTableError(error: unknown, tableName: string) {
 
     return code === "42P01" || message.includes(`"${tableName}"`);
   });
-}
-
-async function safeInsertProjectClient(values: {
-  clientId: string;
-  createdBy: string;
-  projectId: string;
-  workspaceId: string;
-}) {
-  try {
-    await db.insert(projectClients).values(values).onConflictDoNothing();
-    return true;
-  } catch (error) {
-    if (isMissingTableError(error, "project_clients")) {
-      return false;
-    }
-
-    throw error;
-  }
-}
-
-async function safeInsertActivityClient(values: {
-  activityId: string;
-  clientId: string;
-  createdBy: string;
-  workspaceId: string;
-}) {
-  try {
-    await db.insert(activityClients).values(values).onConflictDoNothing();
-    return true;
-  } catch (error) {
-    if (isMissingTableError(error, "activity_clients")) {
-      return false;
-    }
-
-    throw error;
-  }
 }
 
 function getScheduledDateTime(formData: FormData, key = "scheduledAt") {
@@ -358,7 +296,6 @@ export async function logoutAction() {
   const cookieStore = await cookies();
   clearAuthCookies(cookieStore);
   clearWorkspaceCookie(cookieStore);
-  clearActivityCookie(cookieStore);
   revalidatePath("/");
 }
 
@@ -373,7 +310,6 @@ export async function switchWorkspaceAction(formData: FormData) {
 
   const cookieStore = await cookies();
   setWorkspaceCookie(cookieStore, selectedWorkspace.id);
-  clearActivityCookie(cookieStore);
   revalidateDashboardPaths("/dashboard");
 }
 
@@ -412,7 +348,6 @@ export async function createWorkspaceAction(formData: FormData) {
 
     const cookieStore = await cookies();
     setWorkspaceCookie(cookieStore, workspace.id);
-    clearActivityCookie(cookieStore);
   }
 
   revalidateDashboardPaths("/dashboard", "/dashboard/settings");
@@ -465,86 +400,30 @@ export async function deleteWorkspaceAction(formData: FormData) {
   if (activeWorkspace.id === workspaceId) {
     const cookieStore = await cookies();
     clearWorkspaceCookie(cookieStore);
-    clearActivityCookie(cookieStore);
   }
 
   revalidateDashboardPaths("/dashboard", "/dashboard/settings");
 }
 
-export async function switchActivityAction(formData: FormData) {
-  const { activities } = await getWorkspaceContext();
-  const activityId = getRequiredString(formData, "activityId");
-  const selectedActivity = activities.find((activity) => activity.id === activityId);
-
-  if (!selectedActivity) {
-    return;
-  }
-
-  const cookieStore = await cookies();
-  setActivityCookie(cookieStore, selectedActivity.id);
-  revalidateDashboardPaths();
-}
-
-export async function createActivityAction(formData: FormData) {
-  const { activeActivity, userId, workspaceId } = await getActionContext();
+export async function createProjectAction(formData: FormData) {
+  const { userId, workspaceId } = await getActionContext();
   const name = getRequiredString(formData, "name");
+  const companyId = getOptionalString(formData, "companyId");
 
   if (!name) {
     return;
   }
 
-  const [createdActivity] = await db
-    .insert(activities)
-    .values({
-      category: getOptionalString(formData, "category"),
-      color: getOptionalString(formData, "color"),
-      createdBy: userId,
-      description: getOptionalString(formData, "description"),
-      name,
-      startDate: getOptionalDate(formData, "startDate"),
-      status: pickEnum(
-        activityStatuses,
-        getRequiredString(formData, "status"),
-        "active"
-      ),
-      targetDate: getOptionalDate(formData, "targetDate"),
-      workspaceId,
-    })
-    .returning({ id: activities.id });
-
-  if (!activeActivity) {
-    const cookieStore = await cookies();
-    if (createdActivity?.id) {
-      setActivityCookie(cookieStore, createdActivity.id);
-    }
-  }
-
-  revalidateDashboardPaths("/dashboard/activities", "/dashboard/budget");
-}
-
-export async function createProjectAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
-  const name = getRequiredString(formData, "name");
-  const activityId = getOptionalString(formData, "activityId");
-  const clientId = getOptionalString(formData, "clientId");
-  const projectActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    activityId,
-    activeActivity?.id
-  );
-
-  if (!name || !projectActivityId) {
+  if (!companyId) {
     return;
   }
 
   const [project] = await db
     .insert(projects)
     .values({
-      activityId: projectActivityId,
+      companyId,
       budgetPlanned: getNumber(formData, "budgetPlanned"),
       budgetUsed: getNumber(formData, "budgetUsed"),
-      clientId,
       createdBy: userId,
       description: getOptionalString(formData, "description"),
       dueDate: getOptionalDate(formData, "dueDate"),
@@ -565,106 +444,23 @@ export async function createProjectAction(formData: FormData) {
     })
     .returning({ id: projects.id });
 
-  if (project && clientId) {
-    await safeInsertProjectClient({
-      clientId,
-      createdBy: userId,
-      projectId: project.id,
-      workspaceId,
-    });
-
-    if (projectActivityId) {
-      await safeInsertActivityClient({
-        activityId: projectActivityId,
-        clientId,
-        createdBy: userId,
-        workspaceId,
-      });
-    }
-  }
-
   revalidateDashboardPaths(
-    "/dashboard/activities",
     "/dashboard/budget",
     "/dashboard/projects",
-    projectActivityId ? `/dashboard/activities/${projectActivityId}` : ""
-  );
-}
-
-export async function assignClientRelationshipsAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
-  const clientId = getRequiredString(formData, "clientId");
-  const activityId = getOptionalString(formData, "activityId");
-  const projectId = getOptionalString(formData, "projectId");
-  const project = await getProjectScope(workspaceId, projectId);
-  if (projectId && !project) {
-    return;
-  }
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    project?.activityId,
-    activityId,
-    activeActivity?.id
-  );
-
-  if (!clientId || (!resolvedActivityId && !projectId)) {
-    return;
-  }
-
-  if (resolvedActivityId) {
-    await safeInsertActivityClient({
-      activityId: resolvedActivityId,
-      clientId,
-      createdBy: userId,
-      workspaceId,
-    });
-  }
-
-  if (projectId) {
-    const linked = await safeInsertProjectClient({
-      clientId,
-      createdBy: userId,
-      projectId,
-      workspaceId,
-    });
-
-    if (!linked) {
-      await db
-        .update(projects)
-        .set({
-          clientId,
-          updatedAt: new Date(),
-        })
-        .where(eq(projects.id, projectId));
-    }
-  }
-
-  revalidateDashboardPaths(
-    "/dashboard/clients",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : "",
-    projectId ? `/dashboard/projects/${projectId}` : ""
+    project?.id ? `/dashboard/projects/${project.id}` : ""
   );
 }
 
 export async function createGoalAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
+  const { userId, workspaceId } = await getActionContext();
   const title = getRequiredString(formData, "title");
-  const activityId = getOptionalString(formData, "activityId");
   const projectId = getOptionalString(formData, "projectId");
   const project = await getProjectScope(workspaceId, projectId);
   if (projectId && !project) {
     return;
   }
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    project?.activityId,
-    activityId,
-    activeActivity?.id
-  );
 
-  if (!title || !resolvedActivityId) {
+  if (!title) {
     return;
   }
 
@@ -673,7 +469,6 @@ export async function createGoalAction(formData: FormData) {
   const progress = calculateProgress(currentValue, targetValue);
 
   await db.insert(goals).values({
-    activityId: resolvedActivityId,
     createdBy: userId,
     currentValue,
     deadline: getOptionalDate(formData, "deadline"),
@@ -696,23 +491,19 @@ export async function createGoalAction(formData: FormData) {
   revalidateDashboardPaths(
     "/dashboard/goals",
     projectId ? `/dashboard/projects/${projectId}` : "",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
   );
 }
 
 export async function updateProjectProgressAction(formData: FormData) {
-  const { activeActivity, workspaceId } = await getActionContext();
+  const { workspaceId } = await getActionContext();
   const projectId = getRequiredString(formData, "projectId");
 
-  if (!projectId || !activeActivity) {
+  if (!projectId) {
     return;
   }
 
   const project = await getProjectScope(workspaceId, projectId);
-
-  if (project?.activityId !== activeActivity.id) {
-    return;
-  }
+  if (!project) return;
 
   await db
     .update(projects)
@@ -731,10 +522,10 @@ export async function updateProjectProgressAction(formData: FormData) {
 }
 
 export async function updateGoalProgressAction(formData: FormData) {
-  const { activeActivity, workspaceId } = await getActionContext();
+  const { workspaceId } = await getActionContext();
   const goalId = getRequiredString(formData, "goalId");
 
-  if (!goalId || !activeActivity) {
+  if (!goalId) {
     return;
   }
 
@@ -742,6 +533,7 @@ export async function updateGoalProgressAction(formData: FormData) {
     .select({
       activityId: goals.activityId,
       projectId: goals.projectId,
+      workspaceId: goals.workspaceId,
       targetValue: goals.targetValue,
     })
     .from(goals)
@@ -752,13 +544,7 @@ export async function updateGoalProgressAction(formData: FormData) {
     return;
   }
 
-  let goalActivityId = goal.activityId;
-
-  if (!goalActivityId && goal.projectId) {
-    goalActivityId = (await getProjectScope(workspaceId, goal.projectId))?.activityId ?? null;
-  }
-
-  if (goalActivityId !== activeActivity.id) {
+  if (goal.workspaceId !== workspaceId) {
     return;
   }
 
@@ -779,23 +565,15 @@ export async function updateGoalProgressAction(formData: FormData) {
 }
 
 export async function createTaskAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
+  const { userId, workspaceId } = await getActionContext();
   const title = getRequiredString(formData, "title");
-  const activityId = getOptionalString(formData, "activityId");
   const projectId = getOptionalString(formData, "projectId");
   const project = await getProjectScope(workspaceId, projectId);
   if (projectId && !project) {
     return;
   }
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    project?.activityId,
-    activityId,
-    activeActivity?.id
-  );
 
-  if (!title || !resolvedActivityId) {
+  if (!title) {
     return;
   }
 
@@ -806,7 +584,6 @@ export async function createTaskAction(formData: FormData) {
   );
 
   await db.insert(tasks).values({
-    activityId: resolvedActivityId,
     completedAt: status === "done" ? new Date() : null,
     createdBy: userId,
     description: getOptionalString(formData, "description"),
@@ -828,7 +605,6 @@ export async function createTaskAction(formData: FormData) {
   revalidateDashboardPaths(
     "/dashboard/tasks",
     projectId ? `/dashboard/projects/${projectId}` : "",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
   );
 }
 
@@ -873,161 +649,15 @@ export async function updateTaskStatusAction(formData: FormData) {
   revalidateDashboardPaths("/dashboard/tasks");
 }
 
-export async function createClientAction(formData: FormData) {
-  const { activeActivity, userId, workspaceId } = await getActionContext();
-  const contactId = getOptionalString(formData, "contactId");
-  const nameFromForm = getOptionalString(formData, "name");
-
-  if (!activeActivity) return;
-
-  // If the form provides a name we prefer creating from form fields (allows verification/editing).
-  if (nameFromForm) {
-    const name = nameFromForm;
-
-    const [client] = await db
-      .insert(clients)
-      .values({
-        address: getOptionalString(formData, "address"),
-        company: getOptionalString(formData, "company"),
-        createdBy: userId,
-        email: getOptionalString(formData, "email"),
-        name,
-        notes: getOptionalString(formData, "notes"),
-        phone: getOptionalString(formData, "phone"),
-        source: getOptionalString(formData, "source"),
-        status: pickEnum(
-          clientStatuses,
-          getRequiredString(formData, "status"),
-          "prospect"
-        ),
-        website: getOptionalString(formData, "website"),
-        workspaceId,
-      })
-      .returning({ id: clients.id });
-
-    if (client?.id) {
-      await safeInsertActivityClient({
-        activityId: activeActivity.id,
-        clientId: client.id,
-        createdBy: userId,
-        workspaceId,
-      });
-    }
-
-    revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
-
-    return;
-  }
-
-  // If a contactId is provided, fetch the contact and promote it
-  if (contactId) {
-    const [contact] = await db
-      .select()
-      .from(contacts)
-      .where(eq(contacts.id, contactId))
-      .limit(1);
-
-    if (!contact || contact.workspaceId !== workspaceId) {
-      return;
-    }
-
-    // Resolve company name if the contact links to a company
-    let companyName: string | null = null;
-    if (contact.companyId) {
-      const [company] = await db
-        .select({ name: companies.name })
-        .from(companies)
-        .where(eq(companies.id, contact.companyId))
-        .limit(1);
-
-      companyName = company?.name ?? null;
-    }
-
-    const [client] = await db
-      .insert(clients)
-      .values({
-        address: companyName ?? null,
-        company: companyName ?? null,
-        createdBy: userId,
-        email: contact.email ?? null,
-        name: contact.fullName,
-        notes: contact.notes ?? null,
-        phone: contact.phone ?? null,
-        source: contact.source ?? null,
-        status: contact.status ?? "prospect",
-        website: companyName ?? null,
-        workspaceId,
-      })
-      .returning({ id: clients.id });
-
-    if (client?.id) {
-      await safeInsertActivityClient({
-        activityId: activeActivity.id,
-        clientId: client.id,
-        createdBy: userId,
-        workspaceId,
-      });
-    }
-
-    revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
-
-    return;
-  }
-
-  // Fallback: create client from form fields
-  const name = getRequiredString(formData, "name");
-  if (!name) return;
-
-  const [client] = await db
-    .insert(clients)
-    .values({
-      address: getOptionalString(formData, "address"),
-      company: getOptionalString(formData, "company"),
-      createdBy: userId,
-      email: getOptionalString(formData, "email"),
-      name,
-      notes: getOptionalString(formData, "notes"),
-      phone: getOptionalString(formData, "phone"),
-      source: getOptionalString(formData, "source"),
-      status: pickEnum(
-        clientStatuses,
-        getRequiredString(formData, "status"),
-        "prospect"
-      ),
-      website: getOptionalString(formData, "website"),
-      workspaceId,
-    })
-    .returning({ id: clients.id });
-
-  if (client?.id) {
-    await safeInsertActivityClient({
-      activityId: activeActivity.id,
-      clientId: client.id,
-      createdBy: userId,
-      workspaceId,
-    });
-  }
-
-  revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
-}
-
 export async function createCompanyAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
+  const { userId, workspaceId } = await getActionContext();
   const name = getRequiredString(formData, "name");
-  const activityId = getOptionalString(formData, "activityId");
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    activityId,
-    activeActivity?.id
-  );
 
   if (!name) {
     return;
   }
 
   await db.insert(companies).values({
-    activityId: resolvedActivityId,
     createdBy: userId,
     email: getOptionalString(formData, "email"),
     address: getOptionalString(formData, "address"),
@@ -1048,35 +678,24 @@ export async function createCompanyAction(formData: FormData) {
     workspaceId,
   });
 
-  revalidateDashboardPaths(
-    "/dashboard/companies",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
-  );
+  revalidateDashboardPaths("/dashboard/companies");
 }
 
 export async function createContactAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
+  const { userId, workspaceId } = await getActionContext();
   const firstName = getOptionalString(formData, "firstName");
   const lastName = getOptionalString(formData, "lastName");
   const fullName =
     getOptionalString(formData, "fullName") ||
     [firstName, lastName].filter(Boolean).join(" ").trim();
-  const activityId = getOptionalString(formData, "activityId");
   const companyId = getOptionalString(formData, "companyId");
   const company = await getCompanyScope(workspaceId, companyId);
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    activityId,
-    activeActivity?.id
-  );
 
   if (!fullName) {
     return;
   }
 
   await db.insert(contacts).values({
-    activityId: resolvedActivityId,
     companyId: company?.name ? companyId : null,
     createdBy: userId,
     department: getOptionalString(formData, "department"),
@@ -1098,72 +717,12 @@ export async function createContactAction(formData: FormData) {
     workspaceId,
   });
 
-  revalidateDashboardPaths(
-    "/dashboard/contacts",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
-  );
-}
-
-export async function updateClientAction(formData: FormData) {
-  const { workspaceId } = await getActionContext();
-  const clientId = getRequiredString(formData, "clientId");
-
-  const [client] = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.workspaceId, workspaceId)))
-    .limit(1);
-
-  if (!client) {
-    return;
-  }
-
-  await db
-    .update(clients)
-    .set({
-      name: getRequiredString(formData, "name"),
-      company: getOptionalString(formData, "company"),
-      email: getOptionalString(formData, "email"),
-      phone: getOptionalString(formData, "phone"),
-      address: getOptionalString(formData, "address"),
-      website: getOptionalString(formData, "website"),
-      source: getOptionalString(formData, "source"),
-      notes: getOptionalString(formData, "notes"),
-      status: pickEnum(
-        clientStatuses,
-        getRequiredString(formData, "status"),
-        "prospect"
-      ),
-      updatedAt: new Date(),
-    })
-    .where(eq(clients.id, clientId));
-
-  revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
-}
-
-export async function deleteClientAction(formData: FormData) {
-  const { workspaceId } = await getActionContext();
-  const clientId = getRequiredString(formData, "clientId");
-
-  await db
-    .delete(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.workspaceId, workspaceId)));
-
-  revalidateDashboardPaths("/dashboard/clients", "/dashboard/budget");
+  revalidateDashboardPaths("/dashboard/contacts");
 }
 
 export async function updateCompanyAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, workspaceId } =
-    await getActionContext();
+  const { workspaceId } = await getActionContext();
   const companyId = getRequiredString(formData, "companyId");
-  const activityId = getOptionalString(formData, "activityId");
-  const resolvedActivityId = activityId
-    ? getResolvedActivityId(
-        new Set(workspaceActivities.map((activity) => activity.id)),
-        activityId,
-        activeActivity?.id
-      )
-    : null;
 
   const [company] = await db
     .select()
@@ -1184,7 +743,6 @@ export async function updateCompanyAction(formData: FormData) {
         getRequiredString(formData, "status"),
         "prospect"
       ),
-      activityId: resolvedActivityId,
       address: getOptionalString(formData, "address"),
       city: getOptionalString(formData, "city"),
       country: getOptionalString(formData, "country"),
@@ -1198,10 +756,7 @@ export async function updateCompanyAction(formData: FormData) {
     })
     .where(eq(companies.id, companyId));
 
-  revalidateDashboardPaths(
-    "/dashboard/companies",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
-  );
+  revalidateDashboardPaths("/dashboard/companies");
 }
 
 export async function deleteCompanyAction(formData: FormData) {
@@ -1216,18 +771,9 @@ export async function deleteCompanyAction(formData: FormData) {
 }
 
 export async function updateContactAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, workspaceId } =
-    await getActionContext();
+  const { workspaceId } = await getActionContext();
   const contactId = getRequiredString(formData, "contactId");
-  const activityId = getOptionalString(formData, "activityId");
   const companyId = getOptionalString(formData, "companyId");
-  const resolvedActivityId = activityId
-    ? getResolvedActivityId(
-        new Set(workspaceActivities.map((activity) => activity.id)),
-        activityId,
-        activeActivity?.id
-      )
-    : null;
   const company = await getCompanyScope(workspaceId, companyId);
 
   const [contact] = await db
@@ -1252,7 +798,6 @@ export async function updateContactAction(formData: FormData) {
       firstName,
       lastName,
       fullName,
-      activityId: resolvedActivityId,
       companyId: company?.name ? companyId : null,
       jobTitle: getOptionalString(formData, "jobTitle"),
       department: getOptionalString(formData, "department"),
@@ -1271,10 +816,7 @@ export async function updateContactAction(formData: FormData) {
     })
     .where(eq(contacts.id, contactId));
 
-  revalidateDashboardPaths(
-    "/dashboard/contacts",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
-  );
+  revalidateDashboardPaths("/dashboard/contacts");
 }
 
 export async function deleteContactAction(formData: FormData) {
@@ -1289,28 +831,19 @@ export async function deleteContactAction(formData: FormData) {
 }
 
 export async function createBudgetAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
+  const { userId, workspaceId } = await getActionContext();
   const name = getRequiredString(formData, "name");
-  const activityId = getOptionalString(formData, "activityId");
   const projectId = getOptionalString(formData, "projectId");
   const project = await getProjectScope(workspaceId, projectId);
   if (projectId && !project) {
     return;
   }
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    project?.activityId,
-    activityId,
-    activeActivity?.id
-  );
 
-  if (!name || !resolvedActivityId) {
+  if (!name) {
     return;
   }
 
   await db.insert(budgets).values({
-    activityId: resolvedActivityId,
     createdBy: userId,
     name,
     periodEnd: getOptionalDate(formData, "periodEnd"),
@@ -1323,37 +856,22 @@ export async function createBudgetAction(formData: FormData) {
 
   revalidateDashboardPaths(
     "/dashboard/budget",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : "",
     projectId ? `/dashboard/projects/${projectId}` : ""
   );
 }
 
 export async function createTransactionAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
-  const activityId = getOptionalString(formData, "activityId");
+  const { userId, workspaceId } = await getActionContext();
   const projectId = getOptionalString(formData, "projectId");
-  const clientId = getOptionalString(formData, "clientId");
   const project = await getProjectScope(workspaceId, projectId);
   if (projectId && !project) {
     return;
   }
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    project?.activityId,
-    activityId,
-    activeActivity?.id
-  );
-
-  if (!resolvedActivityId) {
-    return;
-  }
 
   await db.insert(transactions).values({
-    activityId: resolvedActivityId,
     amount: getNumber(formData, "amount"),
     category: getOptionalString(formData, "category"),
-    clientId,
+    clientId: null,
     createdBy: userId,
     currency: getRequiredString(formData, "currency") || "EUR",
     description: getOptionalString(formData, "description"),
@@ -1371,27 +889,15 @@ export async function createTransactionAction(formData: FormData) {
     workspaceId,
   });
 
-  if (clientId) {
-    await safeInsertActivityClient({
-      activityId: resolvedActivityId,
-      clientId,
-      createdBy: userId,
-      workspaceId,
-    });
-  }
-
   revalidateDashboardPaths(
     "/dashboard/budget",
     "/dashboard/finances",
     projectId ? `/dashboard/projects/${projectId}` : "",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
   );
 }
 
 export async function createInvoiceAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
-  const activityId = getOptionalString(formData, "activityId");
+  const { userId, workspaceId } = await getActionContext();
   const projectId = getRequiredString(formData, "projectId");
   const invoiceNumber = getRequiredString(formData, "invoiceNumber");
   const itemDescription = getRequiredString(formData, "itemDescription");
@@ -1405,14 +911,7 @@ export async function createInvoiceAction(formData: FormData) {
   if (!project) {
     return;
   }
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    project?.activityId,
-    activityId,
-    activeActivity?.id
-  );
-
-  if (!projectId || !invoiceNumber || !itemDescription || !resolvedActivityId) {
+  if (!projectId || !invoiceNumber || !itemDescription) {
     return;
   }
 
@@ -1420,7 +919,7 @@ export async function createInvoiceAction(formData: FormData) {
     const [invoice] = await tx
       .insert(invoices)
       .values({
-        clientId: getOptionalString(formData, "clientId"),
+        clientId: null,
         createdBy: userId,
         currency: getRequiredString(formData, "currency") || "EUR",
         dueAt: getOptionalDate(formData, "dueAt"),
@@ -1454,28 +953,17 @@ export async function createInvoiceAction(formData: FormData) {
     });
   });
 
-  const clientId = getOptionalString(formData, "clientId");
-  if (clientId) {
-    await safeInsertActivityClient({
-      activityId: resolvedActivityId,
-      clientId,
-      createdBy: userId,
-      workspaceId,
-    });
-  }
-
   revalidateDashboardPaths(
     "/dashboard/invoices",
     projectId ? `/dashboard/projects/${projectId}` : "",
-    resolvedActivityId ? `/dashboard/activities/${resolvedActivityId}` : ""
   );
 }
 
 export async function updateInvoicePaymentAction(formData: FormData) {
-  const { activeActivity, workspaceId } = await getActionContext();
+  const { workspaceId } = await getActionContext();
   const invoiceId = getRequiredString(formData, "invoiceId");
 
-  if (!invoiceId || !activeActivity) {
+  if (!invoiceId) {
     return;
   }
 
@@ -1497,10 +985,7 @@ export async function updateInvoicePaymentAction(formData: FormData) {
   }
 
   const project = await getProjectScope(workspaceId, invoice.projectId);
-
-  if (project?.activityId !== activeActivity.id) {
-    return;
-  }
+  if (!project) return;
 
   const paidAmount = getNumber(formData, "paidAmount");
 
@@ -1570,23 +1055,14 @@ export async function createSocialChannelAction(formData: FormData) {
 }
 
 export async function createSocialPostAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId } =
-    await getActionContext();
+  const { userId, workspaceId } = await getActionContext();
   const title = getRequiredString(formData, "title");
-  const activityId = getOptionalString(formData, "activityId");
   const projectId = getOptionalString(formData, "projectId");
   const project = await getProjectScope(workspaceId, projectId);
   if (projectId && !project) {
     return;
   }
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    project?.activityId,
-    activityId,
-    activeActivity?.id
-  );
-
-  if (!title || !resolvedActivityId) {
+  if (!title) {
     return;
   }
 
@@ -1604,7 +1080,6 @@ export async function createSocialPostAction(formData: FormData) {
   const [post] = await db
     .insert(socialPosts)
     .values({
-      activityId: resolvedActivityId,
       content: getOptionalString(formData, "content"),
       createdBy: userId,
       goalId: getOptionalString(formData, "goalId"),
@@ -1659,26 +1134,18 @@ export async function createSocialPostAction(formData: FormData) {
 }
 
 export async function generateSocialPostAction(formData: FormData) {
-  const { activeActivity, activities: workspaceActivities, userId, workspaceId, workspaceName } =
-    await getActionContext();
+  const { userId, workspaceId, workspaceName } = await getActionContext();
   const brief = getRequiredString(formData, "brief");
 
   if (!brief) {
     return;
   }
 
-  const activityId = getOptionalString(formData, "activityId");
   const projectId = getOptionalString(formData, "projectId");
   const project = await getProjectScope(workspaceId, projectId);
   if (projectId && !project) {
     return;
   }
-  const resolvedActivityId = getResolvedActivityId(
-    new Set(workspaceActivities.map((activity) => activity.id)),
-    project?.activityId,
-    activityId,
-    activeActivity?.id
-  );
   const scheduledAt = getScheduledDateTime(formData);
   const primaryPlatform = pickEnum(
     socialPlatforms,
@@ -1708,13 +1175,9 @@ export async function generateSocialPostAction(formData: FormData) {
     getRequiredString(formData, "status"),
     scheduledAt
   );
-  if (!resolvedActivityId) {
-    return;
-  }
   const [post] = await db
     .insert(socialPosts)
     .values({
-      activityId: resolvedActivityId,
       content: draft.content,
       createdBy: userId,
       goalId: getOptionalString(formData, "goalId"),
@@ -1766,10 +1229,10 @@ export async function generateSocialPostAction(formData: FormData) {
 }
 
 export async function updateSocialPostAutomationAction(formData: FormData) {
-  const { activeActivity, userId, workspaceId } = await getActionContext();
+  const { userId, workspaceId } = await getActionContext();
   const postId = getRequiredString(formData, "postId");
 
-  if (!postId || !activeActivity) {
+  if (!postId) {
     return;
   }
 
@@ -1777,6 +1240,7 @@ export async function updateSocialPostAutomationAction(formData: FormData) {
     .select({
       activityId: socialPosts.activityId,
       projectId: socialPosts.projectId,
+      workspaceId: socialPosts.workspaceId,
     })
     .from(socialPosts)
     .where(eq(socialPosts.id, postId))
@@ -1786,13 +1250,7 @@ export async function updateSocialPostAutomationAction(formData: FormData) {
     return;
   }
 
-  let postActivityId = postRecord.activityId;
-
-  if (!postActivityId && postRecord.projectId) {
-    postActivityId = (await getProjectScope(workspaceId, postRecord.projectId))?.activityId ?? null;
-  }
-
-  if (postActivityId !== activeActivity.id) {
+  if (postRecord.workspaceId !== workspaceId) {
     return;
   }
 
@@ -1842,10 +1300,10 @@ export async function updateSocialPostAutomationAction(formData: FormData) {
 }
 
 export async function updateSocialPostMetricsAction(formData: FormData) {
-  const { activeActivity, workspaceId } = await getActionContext();
+  const { workspaceId } = await getActionContext();
   const postId = getRequiredString(formData, "postId");
 
-  if (!postId || !activeActivity) {
+  if (!postId) {
     return;
   }
 
@@ -1853,6 +1311,7 @@ export async function updateSocialPostMetricsAction(formData: FormData) {
     .select({
       activityId: socialPosts.activityId,
       projectId: socialPosts.projectId,
+      workspaceId: socialPosts.workspaceId,
     })
     .from(socialPosts)
     .where(eq(socialPosts.id, postId))
@@ -1862,13 +1321,7 @@ export async function updateSocialPostMetricsAction(formData: FormData) {
     return;
   }
 
-  let postActivityId = postRecord.activityId;
-
-  if (!postActivityId && postRecord.projectId) {
-    postActivityId = (await getProjectScope(workspaceId, postRecord.projectId))?.activityId ?? null;
-  }
-
-  if (postActivityId !== activeActivity.id) {
+  if (postRecord.workspaceId !== workspaceId) {
     return;
   }
 
@@ -1888,10 +1341,10 @@ export async function updateSocialPostMetricsAction(formData: FormData) {
 }
 
 export async function updateSocialDeliveryAction(formData: FormData) {
-  const { activeActivity, workspaceId } = await getActionContext();
+  const { workspaceId } = await getActionContext();
   const deliveryId = getRequiredString(formData, "deliveryId");
 
-  if (!deliveryId || !activeActivity) {
+  if (!deliveryId) {
     return;
   }
 
@@ -1909,6 +1362,7 @@ export async function updateSocialDeliveryAction(formData: FormData) {
     .select({
       activityId: socialPosts.activityId,
       projectId: socialPosts.projectId,
+      workspaceId: socialPosts.workspaceId,
     })
     .from(socialPosts)
     .where(eq(socialPosts.id, deliveryRecord.postId))
@@ -1918,13 +1372,7 @@ export async function updateSocialDeliveryAction(formData: FormData) {
     return;
   }
 
-  let postActivityId = postRecord.activityId;
-
-  if (!postActivityId && postRecord.projectId) {
-    postActivityId = (await getProjectScope(workspaceId, postRecord.projectId))?.activityId ?? null;
-  }
-
-  if (postActivityId !== activeActivity.id) {
+  if (postRecord.workspaceId !== workspaceId) {
     return;
   }
 

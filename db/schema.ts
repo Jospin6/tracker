@@ -434,6 +434,10 @@ export const projects = pgTable(
       onDelete: "set null",
     }),
 
+    companyId: uuid("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+
     clientId: uuid("client_id").references(() => clients.id, {
       onDelete: "set null",
     }),
@@ -477,6 +481,7 @@ export const projects = pgTable(
     index("projects_workspace_id_idx").on(table.workspaceId),
     index("projects_created_by_idx").on(table.createdBy),
     index("projects_activity_id_idx").on(table.activityId),
+    index("projects_company_id_idx").on(table.companyId),
     index("projects_client_id_idx").on(table.clientId),
     index("projects_status_idx").on(table.status),
     index("projects_priority_idx").on(table.priority),

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import {
-  clearActivityCookie,
   clearAuthCookies,
   clearWorkspaceCookie,
   setAuthCookies,
@@ -40,7 +39,6 @@ export async function DELETE() {
   const response = NextResponse.json({ ok: true });
   clearAuthCookies(response.cookies as WritableCookies);
   clearWorkspaceCookie(response.cookies as WritableCookies);
-  clearActivityCookie(response.cookies as WritableCookies);
 
   return response;
 }

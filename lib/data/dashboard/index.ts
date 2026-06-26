@@ -1,8 +1,5 @@
 export {
-  getActivitiesPageData,
-  getActivityDetailPageData,
   getBudgetPageData,
-  getClientsPageData,
   getCompaniesPageData,
   getContactsPageData,
   getDashboardData,
@@ -13,4 +10,4 @@ export {
   getProjectsPageData,
   getSocialPostsPageData,
   getTasksPageData,
-} from "@/lib/data/dashboard/page-data";
+} from "@/lib/data/dashboard/workspace-data";

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import {
-  Activity,
   AlertTriangle,
   ArrowUpRight,
   BadgeDollarSign,
   BriefcaseBusiness,
   FileText,
   ListTodo,
+  Building2,
   TrendingUp,
   UsersRound,
 } from "lucide-react";
@@ -22,7 +22,7 @@ import {
   secondaryButtonClassName,
 } from "@/components/dashboard/ui";
 import { getDashboardData } from "@/lib/data/dashboard";
-import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
+import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
@@ -37,16 +37,16 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          icon={<Activity className="h-5 w-5" />}
-          label="Activites actives"
-          value={String(data.metrics.activeActivities)}
-          hint={`${data.activities.length} au total`}
+          icon={<Building2 className="h-5 w-5" />}
+          label="Entreprises"
+          value={String(data.metrics.companies)}
+          hint={`${data.companies.length} suivies`}
         />
         <MetricCard
           icon={<BriefcaseBusiness className="h-5 w-5" />}
           label="Projets actifs"
           value={String(data.metrics.activeProjects)}
-          hint={`${data.orphanProjects.length} hors activite`}
+          hint={`${data.orphanProjects.length} sans entreprise`}
         />
         <MetricCard
           icon={<BadgeDollarSign className="h-5 w-5" />}
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
           <div className="grid gap-3">
             <div className="rounded-xl bg-black px-4 py-4">
               <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
-                Projets hors activite
+                Projets sans entreprise
               </p>
               <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-white">
                 {data.orphanProjects.length}
@@ -95,10 +95,10 @@ export default async function DashboardPage() {
             </div>
             <div className="rounded-xl bg-black px-4 py-4">
               <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
-                Clients suivis
+                Contacts suivis
               </p>
               <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-white">
-                {data.metrics.clients}
+                {data.metrics.contacts}
               </p>
             </div>
           </div>
@@ -108,31 +108,24 @@ export default async function DashboardPage() {
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <Panel>
           <SectionTitle
-            icon={Activity}
-            title="Activites"
+            icon={Building2}
+            title="Entreprises"
             description="Point d'entree du travail."
           />
           <div className="space-y-3">
-            {data.activities.length ? (
-              data.activities.map((activity) => (
-                <article key={activity.id} className="rounded-xl bg-black p-5 ring-1 ring-white/8">
+            {data.companies.length ? (
+              data.companies.map((company) => (
+                <article key={company.id} className="rounded-xl bg-black p-5 ring-1 ring-white/8">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="text-lg font-semibold text-white">{activity.name}</h3>
-                        <StatusBadge value={activity.status} />
+                        <h3 className="text-lg font-semibold text-white">{company.name}</h3>
+                        <StatusBadge value={company.status} />
                       </div>
                       <p className="text-sm text-zinc-500">
-                        {activity.clientCount} client(s) | {activity.projectsCount} projet(s)
+                        {company.contactCount} contact(s) | {company.projectCount} projet(s)
                       </p>
                     </div>
-                    <Link
-                      href={`/dashboard/activities/${activity.id}`}
-                      className={secondaryButtonClassName}
-                    >
-                      Ouvrir
-                      <ArrowUpRight className="ml-2 h-4 w-4" />
-                    </Link>
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-4">
@@ -141,15 +134,15 @@ export default async function DashboardPage() {
                         Balance
                       </p>
                       <p className="mt-2 text-sm font-medium text-white">
-                        {formatCurrency(activity.balance)}
+                        {formatCurrency(company.balance)}
                       </p>
                     </div>
                     <div className="rounded-xl bg-black px-4 py-3 ring-1 ring-white/8">
                       <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
-                        Objectifs
+                        Projets
                       </p>
                       <p className="mt-2 text-sm font-medium text-white">
-                        {formatPercent(activity.goalAverageProgress)}
+                        {company.projectCount}
                       </p>
                     </div>
                     <div className="rounded-xl bg-black px-4 py-3 ring-1 ring-white/8">
@@ -157,7 +150,7 @@ export default async function DashboardPage() {
                         Execution
                       </p>
                       <p className="mt-2 text-sm font-medium text-white">
-                        {activity.openTasks} ouvertes
+                        {company.projectNames.join(" | ") || "Aucun projet"}
                       </p>
                     </div>
                     <div className="rounded-xl bg-black px-4 py-3 ring-1 ring-white/8">
@@ -165,7 +158,7 @@ export default async function DashboardPage() {
                         Encours
                       </p>
                       <p className="mt-2 text-sm font-medium text-white">
-                        {formatCurrency(activity.outstanding)}
+                        {formatCurrency(company.outstanding)}
                       </p>
                     </div>
                   </div>
@@ -173,8 +166,8 @@ export default async function DashboardPage() {
               ))
             ) : (
               <EmptyState
-                title="Aucune activite"
-                description="Commence par creer une activite."
+                title="Aucune entreprise"
+                description="Commence par creer une entreprise."
               />
             )}
           </div>
@@ -195,7 +188,7 @@ export default async function DashboardPage() {
                       <div>
                         <h3 className="font-medium text-white">{project.name}</h3>
                         <p className="mt-2 text-sm text-zinc-500">
-                          {project.activityName || "Sans activite"}
+                          {project.companyName || "Sans entreprise"}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
@@ -240,7 +233,7 @@ export default async function DashboardPage() {
                           {transaction.description || transaction.category || "Operation"}
                         </h3>
                         <p className="mt-2 text-sm text-zinc-500">
-                          {transaction.activityName || "Sans activite"} |{" "}
+                          {transaction.companyName || "Sans entreprise"} |{" "}
                           {transaction.projectName || "Sans projet"}
                         </p>
                       </div>
@@ -274,7 +267,7 @@ export default async function DashboardPage() {
                     <div>
                       <h3 className="font-medium text-white">{task.title}</h3>
                       <p className="mt-2 text-sm text-zinc-500">
-                        {task.activityName || "Sans activite"} |{" "}
+                        {task.companyName || "Sans entreprise"} |{" "}
                         {task.projectName || "Sans projet"}
                       </p>
                     </div>
@@ -303,7 +296,7 @@ export default async function DashboardPage() {
                     <div>
                       <h3 className="font-medium text-white">{invoice.invoiceNumber}</h3>
                       <p className="mt-2 text-sm text-zinc-500">
-                        {invoice.clientName || "Sans client"} |{" "}
+                        {invoice.companyName || "Sans entreprise"} |{" "}
                         {invoice.projectName || "Sans projet"}
                       </p>
                     </div>

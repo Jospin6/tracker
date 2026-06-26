@@ -16,7 +16,6 @@ type CompanyEditFormProps = {
     id: string;
     name: string;
     status: string;
-    activityId?: string | null;
     address?: string | null;
     city?: string | null;
     country?: string | null;
@@ -27,14 +26,12 @@ type CompanyEditFormProps = {
     source?: string | null;
     notes?: string | null;
   };
-  activities: Array<{ id: string; label: string }>;
 };
 
-export default function CompanyEditForm({ action, company, activities }: CompanyEditFormProps) {
+export default function CompanyEditForm({ action, company }: CompanyEditFormProps) {
   const [formState, setFormState] = useState({
     name: company.name ?? "",
     status: company.status ?? "prospect",
-    activityId: company.activityId ?? "",
     address: company.address ?? "",
     city: company.city ?? "",
     country: company.country ?? "",
@@ -85,21 +82,6 @@ export default function CompanyEditForm({ action, company, activities }: Company
           </select>
         </FormField>
 
-        <FormField label="Activité">
-          <select
-            name="activityId"
-            value={formState.activityId}
-            onChange={handleChange}
-            className={formSelectClassName}
-          >
-            <option value="">Aucune</option>
-            {activities.map((activity) => (
-              <option key={activity.id} value={activity.id}>
-                {activity.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

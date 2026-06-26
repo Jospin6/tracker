@@ -24,7 +24,8 @@ import { getProjectsPageData } from "@/lib/data/dashboard";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 
 export default async function ProjectsPage() {
-  const { activities, clients, projects } = await getProjectsPageData();
+  const { companies, projects } = await getProjectsPageData();
+  const companyIds = new Set(projects.map((project) => project.companyId).filter(Boolean));
 
   return (
     <div className="space-y-8">
@@ -38,9 +39,9 @@ export default async function ProjectsPage() {
         />
         <MetricCard
           icon={<UsersRound className="h-5 w-5" />}
-          label="Clients lies"
-          value={String(projects.reduce((total, project) => total + project.clientCount, 0))}
-          hint="Liens directs et projet"
+          label="Entreprises liees"
+          value={String(companyIds.size)}
+          hint="Projets rattaches"
         />
         <MetricCard
           icon={<BadgeDollarSign className="h-5 w-5" />}
@@ -58,7 +59,7 @@ export default async function ProjectsPage() {
 
       <section className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
         <Panel>
-          <SectionTitle title="Nouveau projet" description="Toujours rattache a une activite." />
+          <SectionTitle title="Nouveau projet" description="Toujours rattache a une entreprise." />
           <form action={createProjectAction} className="space-y-4">
             <input
               name="name"
@@ -72,29 +73,17 @@ export default async function ProjectsPage() {
               placeholder="Resultat attendu, contexte, promesse"
               className="w-full rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
             />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <select
-                name="activityId"
+                name="companyId"
                 required
-                defaultValue={activities[0]?.id ?? ""}
+                defaultValue={companies[0]?.id ?? ""}
                 className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
               >
-                <option value="">Choisir une activite</option>
-                {activities.map((activity) => (
-                  <option key={activity.id} value={activity.id}>
-                    {activity.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="clientId"
-                defaultValue=""
-                className="rounded-[1.25rem] border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-brand-500"
-              >
-                <option value="">Client principal</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.label}
+                <option value="">Choisir une entreprise</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.label}
                   </option>
                 ))}
               </select>
@@ -186,7 +175,7 @@ export default async function ProjectsPage() {
                         <StatusBadge value={project.status} />
                       </div>
                       <p className="text-sm text-slate-400">
-                        {project.activityName || "Sans activite"} | {project.clientNames.join(" | ") || "Sans client"}
+                        {project.companyName || "Sans entreprise"} | {project.contactCount} contact(s)
                       </p>
                     </div>
 

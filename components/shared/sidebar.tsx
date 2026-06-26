@@ -2,16 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, BadgeDollarSign, Gauge, Megaphone, Bot, Users, Building2, BriefcaseBusiness } from "lucide-react";
+import {
+  BadgeDollarSign,
+  Bot,
+  Building2,
+  FileText,
+  FolderKanban,
+  Gauge,
+  ListTodo,
+  Megaphone,
+  ReceiptText,
+  Users,
+} from "lucide-react";
 
 const nav = [
   { label: "Dashboard", href: "/dashboard", icon: Gauge },
   { label: "Agent IA", href: "/dashboard/agent-ia", icon: Bot },
   { label: "Entreprises", href: "/dashboard/companies", icon: Building2 },
-  { label: "Contacts", href: "/dashboard/contacts", icon: BriefcaseBusiness },
-  { label: "Budget", href: "/dashboard/budget", icon: BadgeDollarSign },
-  { label: "Clients", href: "/dashboard/clients", icon: Users },
+  { label: "Contacts", href: "/dashboard/contacts", icon: Users },
+  { label: "Projets", href: "/dashboard/projects", icon: FolderKanban },
+  { label: "Finances", href: "/dashboard/finances", icon: BadgeDollarSign },
+  { label: "Factures", href: "/dashboard/invoices", icon: ReceiptText },
+  { label: "Taches", href: "/dashboard/tasks", icon: ListTodo },
   { label: "Posts", href: "/dashboard/social-posts", icon: Megaphone },
+  { label: "Rapports", href: "/dashboard/budget", icon: FileText },
 ];
 
 export default function Sidebar() {
@@ -24,6 +38,7 @@ export default function Sidebar() {
           NuruTrack
         </p>
       </div>
+
       <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
         {nav.map((item) => {
           const Icon = item.icon;

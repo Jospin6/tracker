@@ -35,12 +35,8 @@ import { getBudgetPageData } from "@/lib/data/dashboard";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 function TransactionForm({
-  activities,
-  clients,
   projects,
 }: {
-  activities: Array<{ id: string; label: string }>;
-  clients: Array<{ id: string; label: string }>;
   projects: Array<{ id: string; label: string }>;
 }) {
   return (
@@ -102,22 +98,6 @@ function TransactionForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Activite">
-          <select
-            name="activityId"
-            required
-            defaultValue={activities[0]?.id ?? ""}
-            className={formSelectClassName}
-          >
-            <option value="">Choisir une activite</option>
-            {activities.map((activity) => (
-              <option key={activity.id} value={activity.id}>
-                {activity.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
         <FormField label="Projet">
           <select name="projectId" defaultValue="" className={formSelectClassName}>
             <option value="">Sans projet</option>
@@ -129,17 +109,6 @@ function TransactionForm({
           </select>
         </FormField>
       </div>
-
-      <FormField label="Client">
-        <select name="clientId" defaultValue="" className={formSelectClassName}>
-          <option value="">Sans client</option>
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>
-              {client.label}
-            </option>
-          ))}
-        </select>
-      </FormField>
 
       <FormField label="Libelle">
         <input
@@ -167,10 +136,8 @@ function TransactionForm({
 }
 
 function BudgetForm({
-  activities,
   projects,
 }: {
-  activities: Array<{ id: string; label: string }>;
   projects: Array<{ id: string; label: string }>;
 }) {
   return (
@@ -210,22 +177,6 @@ function BudgetForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Activite">
-          <select
-            name="activityId"
-            required
-            defaultValue={activities[0]?.id ?? ""}
-            className={formSelectClassName}
-          >
-            <option value="">Choisir une activite</option>
-            {activities.map((activity) => (
-              <option key={activity.id} value={activity.id}>
-                {activity.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
         <FormField label="Projet">
           <select name="projectId" defaultValue="" className={formSelectClassName}>
             <option value="">Sans projet</option>
@@ -265,20 +216,12 @@ export default async function BudgetPage() {
                 title="Nouvelle operation"
                 description="Ajoute un gain ou une depense."
               />
-              <TransactionForm
-                activities={data.activities}
-                clients={data.clients}
-                projects={data.projects}
-              />
-            </Panel>
-          }
-        >
-          <TransactionForm
-            activities={data.activities}
-            clients={data.clients}
-            projects={data.projects}
-          />
-        </ResponsiveFormDialog>
+                  <TransactionForm projects={data.projects} />
+                </Panel>
+              }
+            >
+            <TransactionForm projects={data.projects} />
+            </ResponsiveFormDialog>
 
         <ResponsiveFormDialog
           title="Nouvelle enveloppe"
@@ -292,11 +235,11 @@ export default async function BudgetPage() {
                 title="Nouvelle enveloppe"
                 description="Cree un budget a suivre automatiquement."
               />
-              <BudgetForm activities={data.activities} projects={data.projects} />
+              <BudgetForm projects={data.projects} />
             </Panel>
           }
         >
-          <BudgetForm activities={data.activities} projects={data.projects} />
+          <BudgetForm projects={data.projects} />
         </ResponsiveFormDialog>
       </div>
 
@@ -448,7 +391,7 @@ export default async function BudgetPage() {
                               {transaction.category || "Non classe"} | {transaction.paymentMethod || "Non precise"}
                             </p>
                             <p className="mt-2 text-sm text-zinc-500">
-                              {transaction.activityName || "Sans activite"} | {transaction.projectName || "Sans projet"}
+                              {transaction.companyName || "Sans entreprise"} | {transaction.projectName || "Sans projet"}
                             </p>
                           </div>
                           <div className="text-right">
@@ -492,7 +435,7 @@ export default async function BudgetPage() {
                           <StatusBadge value={transaction.type} />
                         </div>
                         <p className="text-sm text-zinc-500">
-                          {transaction.activityName || "Sans activite"} | {transaction.projectName || "Sans projet"} | {transaction.clientName || "Sans client"}
+                          {transaction.companyName || "Sans entreprise"} | {transaction.projectName || "Sans projet"}
                         </p>
                       </div>
                       <p className="text-lg font-semibold text-white">
